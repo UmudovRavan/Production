@@ -1,0 +1,569 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { tenantApi } from '../api/tenantApi';
+import { permissionsApi } from '../api/permissionsApi';
+import { RoleResponse } from '../types/role.types';
+import { PermissionResponse } from '../types/permission.types';
+import { useToast } from '../context/ToastContext';
+import ActionConfirmModal from '../components/common/ActionConfirmModal';
+
+const moduleMap: Record<string, string> = {
+  crm: 'CRM Modulu',
+  inventory: 'Anbar (Inventory) Modulu',
+  hr: 'İnsan Resursları (HR) Modulu',
+  accounting: 'Mühasibatlıq (Accounting) Modulu',
+  system: 'Sistem (Platform) İcazələri'
+};
+
+export const RolesPage: React.FC = () => {
+  const { showToast } = useToast();
+
+  const [roles, setRoles] = useState<RoleResponse[]>([]);
+  const [permissions, setPermissions] = useState<PermissionResponse[]>([]);
+  const [selectedRole, setSelectedRole] = useState<RoleResponse | null>(null);
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'matrix' | 'settings'>('matrix');
+  const [moduleSearch, setModuleSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Keep a ref to avoid stale closures in loadData
+  const selectedRoleIdRef = useRef<string | null>(null);
+  selectedRoleIdRef.current = selectedRole?.id || null;
+
+  // New Custom Role Modal State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [newRolePermissionIds, setNewRolePermissionIds] = useState<string[]>([]);
+  const [creating, setCreating] = useState(false);
+
+  // Delete Confirmation Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const isPermissionActive = useCallback(
+    (p: PermissionResponse) => {
+      return selectedPermissionIds.some(
+        (idOrCode) =>
+          idOrCode.toLowerCase() === p.id.toLowerCase() ||
+          (p.code && idOrCode.toLowerCase() === p.code.toLowerCase()) ||
+          (p.name && idOrCode.toLowerCase() === p.name.toLowerCase())
+      );
+    },
+    [selectedPermissionIds]
+  );
+
+  const loadData = useCallback(async (targetRoleId?: string) => {
+    setLoading(true);
+    try {
+      const [rolesData, permsData] = await Promise.all([
+        tenantApi.getRoles(),
+        permissionsApi.getPermissions()
+      ]);
+      setRoles(rolesData);
+      setPermissions(permsData);
+
+      if (rolesData.length > 0) {
+        const desiredId = targetRoleId || selectedRoleIdRef.current;
+        const matched = desiredId ? rolesData.find((r) => r.id === desiredId) : null;
+        const toSelect = matched || rolesData[0];
+
+        setSelectedRole(toSelect);
+        const initialPerms = [
+          ...(toSelect.permissionIds || []),
+          ...(toSelect.permissions || [])
+        ];
+        setSelectedPermissionIds(initialPerms);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Məlumatlar yüklənərkən xəta baş verdi', 'Xəta');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleRoleSelect = (role: RoleResponse) => {
+    setSelectedRole(role);
+    const initialPerms = [
+      ...(role.permissionIds || []),
+      ...(role.permissions || [])
+    ];
+    setSelectedPermissionIds(initialPerms);
+  };
+
+  const handleTogglePermission = (p: PermissionResponse) => {
+    if (!selectedRole || selectedRole.isSystemRole) return;
+
+    if (isPermissionActive(p)) {
+      setSelectedPermissionIds(
+        selectedPermissionIds.filter(
+          (idOrCode) =>
+            idOrCode.toLowerCase() !== p.id.toLowerCase() &&
+            (!p.code || idOrCode.toLowerCase() !== p.code.toLowerCase()) &&
+            (!p.name || idOrCode.toLowerCase() !== p.name.toLowerCase())
+        )
+      );
+    } else {
+      setSelectedPermissionIds([...selectedPermissionIds, p.id]);
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    if (!selectedRole || selectedRole.isSystemRole) return;
+
+    setSaving(true);
+    try {
+      const currentRoleId = selectedRole.id;
+      const permIdsToSend = permissions
+        .filter((p) => isPermissionActive(p))
+        .map((p) => p.id);
+
+      await tenantApi.updateRole(currentRoleId, {
+        name: selectedRole.name,
+        description: selectedRole.description,
+        permissionIds: permIdsToSend
+      });
+      showToast('success', `${selectedRole.name} rolu uğurla yeniləndi!`, 'Uğurlu');
+      await loadData(currentRoleId);
+    } catch (err: any) {
+      showToast('error', err.message || 'Rolu yeniləyərkən xəta', 'Xəta');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const executeDeleteRole = async () => {
+    if (!selectedRole || selectedRole.isSystemRole) return;
+
+    try {
+      await tenantApi.deleteRole(selectedRole.id);
+      showToast('success', `${selectedRole.name} rolu silindi!`, 'Silindi');
+      loadData();
+    } catch (err: any) {
+      showToast('error', err.message || 'Rol silinərkən xəta', 'Xəta');
+      throw err;
+    }
+  };
+
+  const handleCreateCustomRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoleName) {
+      showToast('warning', 'Rol adını daxil edin', 'Xəbərdarlıq');
+      return;
+    }
+    setCreating(true);
+    try {
+      const created = await tenantApi.createRole({
+        name: newRoleName.trim(),
+        description: newRoleDescription.trim() || undefined,
+        permissionIds: newRolePermissionIds
+      });
+      showToast('success', `${newRoleName} xüsusi rolu yaradıldı!`, 'Uğurlu');
+      setIsCreateOpen(false);
+      setNewRoleName('');
+      setNewRoleDescription('');
+      setNewRolePermissionIds([]);
+      await loadData(created?.id);
+    } catch (err: any) {
+      showToast('error', err.message || 'Rol yaradılarkən xəta', 'Xəta');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Group permissions by module
+  const groupedPermissions = permissions.reduce((acc, p) => {
+    const rawMod = p.moduleCode || p.module || 'system';
+    const modName = moduleMap[rawMod.toLowerCase()] || rawMod.toUpperCase();
+    if (!acc[modName]) acc[modName] = [];
+    acc[modName].push(p);
+    return acc;
+  }, {} as Record<string, PermissionResponse[]>);
+
+  const filteredModules = Object.keys(groupedPermissions).filter((mod) =>
+    mod.toLowerCase().includes(moduleSearch.toLowerCase())
+  );
+
+  const totalActiveCount = permissions.filter((p) => isPermissionActive(p)).length;
+
+  return (
+    <div className="max-w-[1280px] mx-auto w-full space-y-6 pb-8 select-none">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Roles &amp; Policy Matrix</h2>
+          <p className="text-sm text-[#A1A1AA]">
+            Sistem və xüsusi rolların icazələr matrisi üzrə təyin edilməsi.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="btn-primary h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Create Custom Role
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Roles List (Left) and Permission Matrix (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Sidebar: Roles List (4 cols) */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 shadow-lg shadow-black/20 space-y-3">
+            <div className="flex justify-between items-center px-1 pb-2 border-b border-[#27272A]">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Mövcud Rollar ({roles.length})
+              </span>
+              <span className="material-symbols-outlined text-base text-[#71717A]">admin_panel_settings</span>
+            </div>
+
+            <div className="space-y-1.5">
+              {loading ? (
+                <div className="py-8 text-center text-xs text-[#A1A1AA]">
+                  <span className="material-symbols-outlined animate-spin text-base mr-1">progress_activity</span>
+                  Rollar yüklənir...
+                </div>
+              ) : (
+                roles.map((r) => {
+                  const isSelected = selectedRole?.id === r.id;
+                  const rolePermCount = r.permissions?.length || r.permissionIds?.length || 0;
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => handleRoleSelect(r)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-[#27272A] border-white/40 text-white shadow-md'
+                          : 'bg-[#121214] border-[#27272A]/70 hover:border-[#3F3F46] text-[#A1A1AA] hover:text-white'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs truncate">{r.name}</span>
+                          {r.isSystemRole && (
+                            <span className="bg-sky-500/15 text-sky-400 text-[10px] font-bold px-1.5 py-0.2 rounded border border-sky-500/20 shrink-0">
+                              System
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#71717A] truncate mt-0.5">
+                          {r.description || 'Xüsusi istifadəçi rolu'}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-mono text-[#71717A] shrink-0">
+                        {rolePermCount} icazə
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Content: Selected Role Policy Matrix (8 cols) */}
+        <div className="lg:col-span-8 space-y-4">
+          {selectedRole ? (
+            <div className="bg-[#18181B] border border-[#27272A] rounded-2xl overflow-hidden shadow-lg shadow-black/20 flex flex-col">
+              {/* Header Info */}
+              <div className="p-5 border-b border-[#27272A] bg-[#141416] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white tracking-tight">{selectedRole.name}</h3>
+                    {selectedRole.isSystemRole ? (
+                      <span className="bg-amber-500/15 text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">
+                        Read-Only System Role
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                        Custom Role (Editable)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#71717A] mt-0.5">
+                    {selectedRole.description || 'Bu rol üçün aktiv icazələr matrisi'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {!selectedRole.isSystemRole && (
+                    <>
+                      <button
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="px-3 py-1.5 rounded-xl border border-rose-500/30 hover:bg-rose-500/15 text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Rolu sil"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        Sil
+                      </button>
+                      <button
+                        onClick={handleSavePermissions}
+                        disabled={saving}
+                        className="btn-primary px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">save</span>
+                        {saving ? 'Yadda saxlanılır...' : 'Dəyişiklikləri Saxla'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabs and Filter */}
+              <div className="p-4 border-b border-[#27272A] flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#18181B]">
+                <div className="flex p-1 bg-[#121214] border border-[#27272A] rounded-xl w-full sm:w-auto">
+                  <button
+                    onClick={() => setActiveTab('matrix')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                      activeTab === 'matrix' ? 'bg-[#27272A] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
+                    }`}
+                  >
+                    Permissions Matrix ({totalActiveCount})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                      activeTab === 'settings' ? 'bg-[#27272A] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
+                    }`}
+                  >
+                    Role Scope &amp; Info
+                  </button>
+                </div>
+
+                <div className="relative w-full sm:w-56">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#71717A] text-sm">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Modul axtar..."
+                    value={moduleSearch}
+                    onChange={(e) => setModuleSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 bg-[#121214] border border-[#27272A] rounded-xl text-xs text-white placeholder-[#71717A] outline-none focus:border-white/40 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Tab Content: Matrix */}
+              {activeTab === 'matrix' && (
+                <div className="p-5 space-y-6 max-h-[600px] overflow-y-auto">
+                  {filteredModules.map((modName) => {
+                    const modPerms = groupedPermissions[modName];
+                    const activeCount = modPerms.filter((p) => isPermissionActive(p)).length;
+
+                    return (
+                      <div key={modName} className="border border-[#27272A] rounded-xl overflow-hidden bg-[#141416]">
+                        <div className="p-3 bg-[#18181B] border-b border-[#27272A] flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-white uppercase tracking-wider">{modName}</span>
+                            <span className="text-[10px] text-[#71717A] font-mono">
+                              ({activeCount} / {modPerms.length} aktiv)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                          {modPerms.map((p) => {
+                            const isChecked = isPermissionActive(p);
+                            return (
+                              <label
+                                key={p.id}
+                                className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs transition-all ${
+                                  selectedRole.isSystemRole
+                                    ? 'cursor-not-allowed opacity-90'
+                                    : 'cursor-pointer'
+                                } ${
+                                  isChecked
+                                    ? 'bg-white/[0.08] border-white/40 text-white shadow-xs'
+                                    : 'bg-[#121214] border-[#27272A] text-[#A1A1AA] hover:border-[#3F3F46]'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  disabled={selectedRole.isSystemRole}
+                                  checked={isChecked}
+                                  onChange={() => handleTogglePermission(p)}
+                                  className="rounded h-4 w-4 mt-0.5 shrink-0 accent-white"
+                                />
+                                <div className="min-w-0">
+                                  <span className="text-xs font-bold text-[#F4F4F5] block truncate">
+                                    {p.name}
+                                  </span>
+                                  {p.code && (
+                                    <span className="font-mono text-[10px] text-sky-400 block mt-0.5">
+                                      {p.code}
+                                    </span>
+                                  )}
+                                  {p.description && (
+                                    <span className="text-[10.5px] text-[#71717A] block leading-snug mt-0.5">
+                                      {p.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Tab Content: Settings */}
+              {activeTab === 'settings' && (
+                <div className="p-6 space-y-4 text-xs">
+                  <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl space-y-2">
+                    <span className="text-[#71717A] block">Rol Təsviri:</span>
+                    <p className="text-white font-medium">
+                      {selectedRole.description || 'Təsvir əlavə olunmayıb.'}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl space-y-2">
+                    <span className="text-[#71717A] block">Təhlükəsizlik Siyasəti:</span>
+                    <p className="text-[#A1A1AA]">
+                      Bu rolun təyin olunduğu istifadəçilər yalnız yuxarıdakı icazələr matrisində seçilmiş mikroservis
+                      hüquqlarına malik olacaqlar. JWT token generatoru hər login zamanı həmin icazələri avtomatik
+                      olaraq imzalanmış iddia (claim) kimi kodlaşdırır.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-12 text-center text-[#71717A] text-xs">
+              Məlumatlara baxmaq üçün sol tərəfdən bir rol seçin.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create Custom Role Modal */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
+                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Yeni Xüsusi Rol Yarat</h3>
+                  <p className="text-xs text-[#71717A]">Şirkətiniz üçün unikal icazə profili</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCreateOpen(false)} className="text-[#71717A] hover:text-white p-1">
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomRole} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Rol Adı *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Məs: SalesManager"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  className="w-full crm-input text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Təsvir (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="Satış komandası rəhbərinin hüquqları..."
+                  value={newRoleDescription}
+                  onChange={(e) => setNewRoleDescription(e.target.value)}
+                  className="w-full crm-input text-xs"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-[#27272A]">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-white">İlkin İcazələr</label>
+                  <span className="text-[10px] text-[#71717A] font-mono">
+                    ({newRolePermissionIds.length} / {permissions.length} seçilib)
+                  </span>
+                </div>
+                <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                  {permissions.map((p) => {
+                    const isChecked = newRolePermissionIds.includes(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className={`flex items-start gap-2.5 p-2 rounded-xl border text-xs cursor-pointer ${
+                          isChecked
+                            ? 'bg-white/[0.08] border-white/40 text-white font-semibold'
+                            : 'border-[#27272A] bg-[#121214] text-[#A1A1AA]'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewRolePermissionIds([...newRolePermissionIds, p.id]);
+                            } else {
+                              setNewRolePermissionIds(newRolePermissionIds.filter((id) => id !== p.id));
+                            }
+                          }}
+                          className="rounded h-3.5 w-3.5 mt-0.5 shrink-0 accent-white"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-[11.5px] font-bold block">{p.name}</span>
+                          {p.code && <span className="font-mono text-[10px] text-sky-400 block">{p.code}</span>}
+                          {p.description && <span className="text-[#71717A] text-[10px] block truncate">{p.description}</span>}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#27272A]">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold btn-secondary rounded-xl cursor-pointer"
+                >
+                  Ləğv Et
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer"
+                >
+                  {creating ? 'Yaradılır...' : 'Rol Yarat'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Role Deletion Modal */}
+      <ActionConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={executeDeleteRole}
+        title="Xüsusi Rolu Sil"
+        description="Bu xüsusi rolu silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarılmır."
+        itemHighlight={selectedRole ? selectedRole.name : undefined}
+        variant="danger"
+        icon="delete_forever"
+        confirmText="Rolu Sil"
+        showReasonInput={false}
+      />
+    </div>
+  );
+};
+
+export default RolesPage;
