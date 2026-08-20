@@ -31,7 +31,7 @@ const desktopApps = [
   {
     id: 'desk',
     name: 'Desk',
-    route: 'http://31.57.77.199:8081/desktop',
+    route: import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/desktop` : 'https://info.altensor.com/desktop',
     iconElement: (
       <div className="w-6 h-6 rounded-lg bg-[#475569] text-white flex items-center justify-center shrink-0">
         <ComputerDesktopIcon className="w-3.5 h-3.5" />
@@ -138,7 +138,7 @@ const CrmSidebar = ({ isNotificationsOpen, onToggleNotifications, onCollapseChan
     } catch (err) {
       console.warn('Logout notice:', err);
     }
-    window.location.href = 'http://31.57.77.199:8081/login';
+    window.location.href = import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/login` : 'https://info.altensor.com/login';
   };
 
   const handleAppSelect = (route) => {

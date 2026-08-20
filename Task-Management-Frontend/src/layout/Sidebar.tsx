@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { authService, workGroupService } from '../api';
 import { useNotifications } from '../context/NotificationContext';
+import { useLanguage } from '../context/LanguageContext';
 import { parseJwtToken } from '../utils';
 import altensorLogo from '../assets/Altensor-Logo.png';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
@@ -39,7 +40,7 @@ const desktopApps = [
     {
         id: 'desk',
         name: 'Desk',
-        route: 'http://31.57.77.199:8081/desktop',
+        route: import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/desktop` : 'https://info.altensor.com/desktop',
         iconElement: (
             <div className="w-6 h-6 rounded-lg bg-[#475569] text-white flex items-center justify-center shrink-0">
                 <ComputerDesktopIcon className="w-3.5 h-3.5" />
@@ -96,6 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     const navigate = useNavigate();
     const { unreadCount: contextUnreadCount } = useNotifications();
+    const { t } = useLanguage();
     const unreadNotificationsCount = contextUnreadCount !== undefined ? contextUnreadCount : propNotificationCount;
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -196,36 +198,32 @@ const Sidebar: React.FC<SidebarProps> = ({
             icon: React.ComponentType<{ className?: string }>;
             isNotification?: boolean;
         }> = [
-            { path: '/notifications', label: 'Bildirişlər', icon: BellIcon, isNotification: true },
-            { path: '/dashboard', label: 'Dashboard', icon: Squares2X2Icon },
-            { path: '/tasks', label: 'Tapşırıqlar', icon: CheckCircleIcon },
+            { path: '/notifications', label: t('nav.notifications', {}, 'Bildirişlər'), icon: BellIcon, isNotification: true },
+            { path: '/dashboard', label: t('nav.dashboard', {}, 'Dashboard'), icon: Squares2X2Icon },
+            { path: '/tasks', label: t('tasks.taskList', {}, 'Tapşırıqlar'), icon: CheckCircleIcon },
         ];
 
-        // Role-based Work Groups Navigation:
-        // 1. Admin: Sees all work groups via '/work-groups'
-        // 2. Manager: Sees their own work group via '/work-groups/:id' (or '/work-groups')
-        // 3. Employee: Does NOT see work groups
         if (isAdmin) {
             items.push({
                 path: '/work-groups',
-                label: 'İş Qrupları',
+                label: t('nav.workgroups', {}, 'İş Qrupları'),
                 icon: UserGroupIcon,
             });
         } else if (isManager) {
             items.push({
                 path: managerGroupId ? `/work-groups/${managerGroupId}` : '/work-groups',
-                label: managerGroupName || 'İş Qrupum',
+                label: managerGroupName || t('nav.workgroups', {}, 'İş Qrupum'),
                 icon: UserGroupIcon,
             });
         }
 
         items.push(
-            { path: '/leaderboard', label: 'Liderlər Lövhəsi', icon: BoltIcon },
-            { path: '/performance', label: 'Performans', icon: ChartBarIcon }
+            { path: '/leaderboard', label: t('nav.leaderboard', {}, 'Liderlər Lövhəsi'), icon: BoltIcon },
+            { path: '/performance', label: t('nav.performance', {}, 'Performans'), icon: ChartBarIcon }
         );
 
         return items;
-    }, [isAdmin, isManager, managerGroupId, managerGroupName]);
+    }, [isAdmin, isManager, managerGroupId, managerGroupName, t]);
 
     return (
         <aside
@@ -279,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 >
                                     <div className="flex items-center gap-3">
                                         <Squares2X2Icon className="w-4 h-4 text-[#A1A1AA]" />
-                                        <span>Tətbiqlər</span>
+                                        <span>{t('common.applications', {}, 'Tətbiqlər')}</span>
                                     </div>
                                     <ChevronRightIcon className="w-3.5 h-3.5 text-[#71717A]" />
                                 </div>
@@ -310,7 +308,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                             >
                                 <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Tənzimləmələr</span>
+                                <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
                             </button>
 
                             {/* About */}
@@ -321,7 +319,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                             >
                                 <InformationCircleIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Haqqında</span>
+                                <span>{t('common.about', {}, 'Haqqında')}</span>
                             </button>
 
                             <div className="h-px bg-[#2C2C2E] my-1"></div>
@@ -332,7 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-left w-full text-[#A1A1AA] cursor-pointer"
                             >
                                 <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                                <span>Çıxış et</span>
+                                <span>{t('nav.logout', {}, 'Çıxış et')}</span>
                             </button>
                         </div>
                     )}
@@ -419,10 +417,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
                         isCollapsed ? 'justify-center px-0 py-2' : ''
                     }`}
-                    title={isCollapsed ? 'Kömək & Dəstək' : undefined}
+                    title={isCollapsed ? t('common.helpSupport', {}, 'Kömək & Dəstək') : undefined}
                 >
                     <QuestionMarkCircleIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                    {!isCollapsed && <span>Kömək & Dəstək</span>}
+                    {!isCollapsed && <span>{t('common.helpSupport', {}, 'Kömək & Dəstək')}</span>}
                 </button>
 
                 <button
@@ -434,14 +432,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                     className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
                         isCollapsed ? 'justify-center px-0 py-2' : ''
                     }`}
-                    title={isCollapsed ? 'Menyunu genişləndir' : 'Menyunu kiçilt'}
+                    title={isCollapsed ? t('common.expandMenu', {}, 'Menyunu genişləndir') : t('common.collapseMenu', {}, 'Menyunu kiçilt')}
                 >
                     {isCollapsed ? (
                         <ChevronRightIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
                     ) : (
                         <>
                             <ChevronLeftIcon className="w-[18px] h-[18px] stroke-[1.75] shrink-0" />
-                            <span>Menyunu kiçilt</span>
+                            <span>{t('common.collapseMenu', {}, 'Menyunu kiçilt')}</span>
                         </>
                     )}
                 </button>

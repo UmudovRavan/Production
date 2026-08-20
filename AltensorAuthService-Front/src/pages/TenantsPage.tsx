@@ -10,12 +10,14 @@ import {
 } from '../types/tenant.types';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { formatDate } from '../utils/formatters';
 import ActionConfirmModal, { ActionModalVariant } from '../components/common/ActionConfirmModal';
 
 export const TenantsPage: React.FC = () => {
   const { isSuperAdmin } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [tenants, setTenants] = useState<TenantResponse[]>([]);
@@ -112,6 +114,9 @@ export const TenantsPage: React.FC = () => {
 
   useEffect(() => {
     fetchTenants();
+    const handleTenantCreated = () => fetchTenants();
+    window.addEventListener('tenant-created', handleTenantCreated);
+    return () => window.removeEventListener('tenant-created', handleTenantCreated);
   }, [fetchTenants]);
 
   const handleCreateTenant = async (e: React.FormEvent) => {
@@ -120,6 +125,9 @@ export const TenantsPage: React.FC = () => {
       showToast('warning', 'Bütün məcburi xanaları doldurun', 'Xəbərdarlıq');
       return;
     }
+
+    const savedName = tenantName.trim();
+    const savedSlug = tenantSlug.trim().toLowerCase();
 
     setCreatingTenant(true);
     try {
@@ -141,8 +149,8 @@ export const TenantsPage: React.FC = () => {
         .map((m) => m.id);
 
       const created = await platformApi.createTenant({
-        name: tenantName.trim(),
-        slug: tenantSlug.trim().toLowerCase(),
+        name: savedName,
+        slug: savedSlug,
         domain: tenantDomain.trim() || undefined,
         adminFullName: adminFullName.trim(),
         adminEmail: adminEmail.trim(),
@@ -151,7 +159,7 @@ export const TenantsPage: React.FC = () => {
         moduleCodes: selectedModules
       });
 
-      showToast('success', `${tenantName} təşkilatı uğurla yaradıldı!`, 'Uğurlu');
+      showToast('success', `${savedName} təşkilatı uğurla yaradıldı!`, 'Uğurlu');
       setIsCreateOpen(false);
       setTenantName('');
       setTenantSlug('');
@@ -159,11 +167,37 @@ export const TenantsPage: React.FC = () => {
       setAdminFullName('');
       setAdminEmail('');
 
+      let resolvedId =
+        (created as any)?.id ||
+        (created as any)?.data?.id ||
+        (created as any)?.tenantId ||
+        (created as any)?.data?.tenantId;
+
+      // Fallback: If backend returns success without direct ID, lookup the newly created tenant
+      if (!resolvedId) {
+        try {
+          const freshTenants = await platformApi.getTenants();
+          setTenants(freshTenants);
+          const newlyCreated = freshTenants.find(
+            (t) =>
+              t.slug?.toLowerCase() === savedSlug.toLowerCase() ||
+              t.name?.toLowerCase() === savedName.toLowerCase()
+          );
+          if (newlyCreated?.id) {
+            resolvedId = newlyCreated.id;
+          }
+        } catch {
+          // ignore lookup error
+        }
+      }
+
+      window.dispatchEvent(new CustomEvent('tenant-created'));
+
       // Navigate directly to the newly created tenant's detail page
-      if (created && created.id) {
-        navigate(`/tenants/${created.id}`);
+      if (resolvedId) {
+        navigate(`/tenants/${resolvedId}`);
       } else {
-        fetchTenants();
+        await fetchTenants();
       }
     } catch (err: any) {
       showToast('error', err.message || 'Müştəri yaradılarkən xəta baş verdi', 'Xəta');
@@ -276,9 +310,9 @@ export const TenantsPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Tenants</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">{t('tenants.title', {}, 'Tenants')}</h2>
           <p className="text-sm text-[#A1A1AA]">
-            Müştəri təşkilatları, siyasətlər və modul abunəliklərinin idarə edilməsi.
+            {t('tenants.subtitle', {}, 'Müştəri təşkilatları, siyasətlər və modul abunəliklərinin idarə edilməsi.')}
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -287,7 +321,7 @@ export const TenantsPage: React.FC = () => {
             className="btn-secondary h-9 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t('common.exportCsv', {}, 'Export CSV')}
           </button>
           {isSuperAdmin && (
             <button
@@ -295,7 +329,7 @@ export const TenantsPage: React.FC = () => {
               className="btn-primary h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              New Tenant
+              {t('tenants.createNew', {}, 'New Tenant')}
             </button>
           )}
         </div>
@@ -315,7 +349,7 @@ export const TenantsPage: React.FC = () => {
                 : 'text-[#A1A1AA] hover:text-white'
             }`}
           >
-            All ({tenants.length})
+            {t('common.all', {}, 'All')} ({tenants.length})
           </button>
           <button
             onClick={() => {
@@ -328,7 +362,7 @@ export const TenantsPage: React.FC = () => {
                 : 'text-[#A1A1AA] hover:text-white'
             }`}
           >
-            Active
+            {t('common.active', {}, 'Active')}
           </button>
           <button
             onClick={() => {
@@ -341,7 +375,7 @@ export const TenantsPage: React.FC = () => {
                 : 'text-[#A1A1AA] hover:text-white'
             }`}
           >
-            Suspended
+            {t('common.suspended', {}, 'Suspended')}
           </button>
           <button
             onClick={() => {
@@ -354,7 +388,7 @@ export const TenantsPage: React.FC = () => {
                 : 'text-[#A1A1AA] hover:text-white'
             }`}
           >
-            Terminated
+            {t('common.terminated', {}, 'Terminated')}
           </button>
         </div>
 
@@ -364,7 +398,7 @@ export const TenantsPage: React.FC = () => {
           </span>
           <input
             className="w-full pl-9 pr-3 py-1.5 bg-[#121214] border border-[#27272A] rounded-xl text-xs text-white placeholder-[#71717A] outline-none focus:border-white/40 transition-all"
-            placeholder="Ad və ya domen ilə axtar..."
+            placeholder={t('common.searchPlaceholder', {}, 'Ad və ya domen ilə axtar...')}
             type="text"
             value={searchTerm}
             onChange={(e) => {
@@ -381,12 +415,12 @@ export const TenantsPage: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#141416] border-b border-[#27272A] text-[11px] text-[#A1A1AA] uppercase tracking-wider font-semibold">
-                <th className="py-3 px-4">Təşkilat</th>
-                <th className="py-3 px-4">Domen</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">İstifadəçilər</th>
-                <th className="py-3 px-4">Qeydiyyat</th>
-                <th className="py-3 px-4 text-right">Əməliyyatlar</th>
+                <th className="py-3 px-4">{t('common.tenant', {}, 'Təşkilat')}</th>
+                <th className="py-3 px-4">{t('common.domain', {}, 'Domen')}</th>
+                <th className="py-3 px-4">{t('common.status', {}, 'Status')}</th>
+                <th className="py-3 px-4 text-right">{t('common.usersCount', {}, 'İstifadəçilər')}</th>
+                <th className="py-3 px-4">{t('common.registration', {}, 'Qeydiyyat')}</th>
+                <th className="py-3 px-4 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#27272A]/60 text-xs">
@@ -395,41 +429,47 @@ export const TenantsPage: React.FC = () => {
                   <td colSpan={6} className="py-10 text-center text-[#A1A1AA]">
                     <span className="inline-flex items-center gap-2">
                       <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-                      Müştərilər yüklənir...
+                      {t('common.loading', {}, 'Müştərilər yüklənir...')}
                     </span>
                   </td>
                 </tr>
               ) : paginatedTenants.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-[#A1A1AA]">
-                    Axtarışa uyğun heç bir müştəri təşkilatı tapılmadı.
+                    {t('common.none', {}, 'Axtarışa uyğun heç bir müştəri təşkilatı tapılmadı.')}
                   </td>
                 </tr>
               ) : (
-                paginatedTenants.map((t) => {
-                  const isActive = isTenantActiveStatus(t.status, t.suspendedAt);
-                  const statusLabel = getTenantStatusLabel(t.status, t.suspendedAt);
-                  const isActionOpen = actionMenuOpenId === t.id;
-                  const totalUsers = t.userCount ?? t.usersCount ?? 0;
+                paginatedTenants.map((tItem) => {
+                  const isActive = isTenantActiveStatus(tItem.status, tItem.suspendedAt);
+                  const statusLabel = getTenantStatusLabel(tItem.status, tItem.suspendedAt);
+                  const isActionOpen = actionMenuOpenId === tItem.id;
+                  const totalUsers = tItem.userCount ?? tItem.usersCount ?? 0;
+                  const localizedStatus =
+                    statusLabel === 'Active'
+                      ? t('common.active', {}, 'Active')
+                      : statusLabel === 'Suspended'
+                      ? t('common.suspended', {}, 'Suspended')
+                      : statusLabel;
 
                   return (
                     <tr
-                      key={t.id}
+                      key={tItem.id}
                       className="hover:bg-white/[0.03] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/tenants/${t.id}`)}
+                      onClick={() => navigate(`/tenants/${tItem.id}`)}
                     >
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-white text-[13px]">
-                            {t.name}
+                            {tItem.name}
                           </span>
                           <span className="font-mono text-[#71717A] text-[11.5px] mt-0.5">
-                            @{t.slug}
+                            @{tItem.slug}
                           </span>
                         </div>
                       </td>
                       <td className="py-3.5 px-4 text-[#A1A1AA] font-mono text-[11.5px]">
-                        {t.domain || '-'}
+                        {tItem.domain || '-'}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
@@ -442,14 +482,14 @@ export const TenantsPage: React.FC = () => {
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          {statusLabel}
+                          {localizedStatus}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-[#A1A1AA] text-right font-medium">
                         {totalUsers.toLocaleString()}
                       </td>
                       <td className="py-3.5 px-4 text-[#71717A]">
-                        {formatDate(t.createdAt)}
+                        {formatDate(tItem.createdAt)}
                       </td>
                       <td
                         className="py-3.5 px-4 text-right relative"
@@ -458,7 +498,7 @@ export const TenantsPage: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActionMenuOpenId(isActionOpen ? null : t.id);
+                            setActionMenuOpenId(isActionOpen ? null : tItem.id);
                           }}
                           className="p-1 rounded-lg text-[#71717A] hover:text-white hover:bg-[#27272A] transition-colors cursor-pointer"
                         >
@@ -473,16 +513,16 @@ export const TenantsPage: React.FC = () => {
                             <button
                               onClick={() => {
                                 setActionMenuOpenId(null);
-                                navigate(`/tenants/${t.id}`);
+                                navigate(`/tenants/${tItem.id}`);
                               }}
                               className="w-full px-3 py-2 text-xs hover:bg-[#2C2C2E] rounded-lg flex items-center gap-2 text-[#D4D4D8] hover:text-white transition-colors cursor-pointer"
                             >
                               <span className="material-symbols-outlined text-sm">visibility</span>
-                              Detallara Bax
+                              {t('common.viewDetails', {}, 'Detallara Bax')}
                             </button>
                             <div className="h-px bg-[#27272A] my-1"></div>
                             <button
-                              onClick={(e) => openToggleSuspendModal(t, e)}
+                              onClick={(e) => openToggleSuspendModal(tItem, e)}
                               className={`w-full px-3 py-2 text-xs flex items-center gap-2 cursor-pointer ${
                                 isActive
                                   ? 'text-amber-400 hover:bg-amber-500/10'
@@ -492,7 +532,7 @@ export const TenantsPage: React.FC = () => {
                               <span className="material-symbols-outlined text-sm">
                                 {isActive ? 'block' : 'check_circle'}
                               </span>
-                              {isActive ? 'Müştərini Dondur' : 'Aktivləşdir'}
+                              {isActive ? t('tenants.suspendTenant', {}, 'Müştərini Dondur') : t('tenants.activateTenant', {}, 'Aktivləşdir')}
                             </button>
                           </div>
                         )}
@@ -508,7 +548,7 @@ export const TenantsPage: React.FC = () => {
         {/* Pagination Footer */}
         <div className="bg-[#141416] border-t border-[#27272A] px-4 py-3 flex items-center justify-between">
           <span className="text-xs text-[#71717A]">
-            Göstərilir: {filteredTenants.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
+            {t('common.showing', {}, 'Göstərilir')}: {filteredTenants.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
             {Math.min(currentPage * pageSize, filteredTenants.length)} / {filteredTenants.length}
           </span>
           <div className="flex items-center gap-1">
@@ -547,16 +587,16 @@ export const TenantsPage: React.FC = () => {
 
       {/* New Tenant Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
                   <span className="material-symbols-outlined text-lg">domain_add</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Yeni Müştəri Təşkilatı (Tenant)</h3>
-                  <p className="text-xs text-[#71717A]">Şirkət profili, ilk admin və aktiv modulları təyin edin</p>
+                  <h3 className="text-sm font-bold text-white">{t('tenants.createNew', {}, 'Yeni Müştəri Təşkilatı (Tenant)')}</h3>
+                  <p className="text-xs text-[#71717A]">{t('tenants.subtitle', {}, 'Şirkət profili, ilk admin və aktiv modulları təyin edin')}</p>
                 </div>
               </div>
               <button onClick={() => setIsCreateOpen(false)} className="text-[#71717A] hover:text-white p-1">
@@ -567,7 +607,7 @@ export const TenantsPage: React.FC = () => {
             <form onSubmit={handleCreateTenant} className="space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Təşkilat Adı *</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantName', {}, 'Təşkilat Adı')} *</label>
                   <input
                     type="text"
                     required
@@ -583,7 +623,7 @@ export const TenantsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tenant Slug *</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.tenantSlug', {}, 'Tenant Slug')} *</label>
                   <input
                     type="text"
                     required
@@ -596,7 +636,7 @@ export const TenantsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Domen (Opsional)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.customDomain', {}, 'Domen (Opsional)')}</label>
                 <input
                   type="text"
                   placeholder="pashaholding.az"
@@ -607,10 +647,10 @@ export const TenantsPage: React.FC = () => {
               </div>
 
               <div className="pt-2 border-t border-[#27272A]">
-                <span className="block text-xs font-bold text-white mb-2">İlk İnzibatçı (Admin) Hesabı</span>
+                <span className="block text-xs font-bold text-white mb-2">{t('common.adminAccount', {}, 'İlk İnzibatçı (Admin) Hesabı')}</span>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Ad, Soyad *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminUser', {}, 'Admin Ad, Soyad')} *</label>
                     <input
                       type="text"
                       required
@@ -621,7 +661,7 @@ export const TenantsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Admin Email *</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminEmail', {}, 'Admin Email')} *</label>
                     <input
                       type="email"
                       required
@@ -634,7 +674,7 @@ export const TenantsPage: React.FC = () => {
                 </div>
 
                 <div className="mt-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Admin İlkin Şifrə *</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.adminPassword', {}, 'Admin İlkin Şifrə')} *</label>
                   <input
                     type="password"
                     required
@@ -646,7 +686,7 @@ export const TenantsPage: React.FC = () => {
               </div>
 
               <div className="pt-2 border-t border-[#27272A]">
-                <label className="block text-xs font-bold text-white mb-2">Aktiv Modul Abunəlikləri</label>
+                <label className="block text-xs font-bold text-white mb-2">{t('tenants.activeModules', {}, 'Aktiv Modul Abunəlikləri')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {modulesToDisplay.map((m) => {
                     const isChecked =
@@ -696,14 +736,14 @@ export const TenantsPage: React.FC = () => {
                   onClick={() => setIsCreateOpen(false)}
                   className="px-4 py-2 text-xs font-semibold btn-secondary rounded-xl cursor-pointer"
                 >
-                  Ləğv Et
+                  {t('common.cancel', {}, 'Ləğv Et')}
                 </button>
                 <button
                   type="submit"
                   disabled={creatingTenant}
                   className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer shadow-md"
                 >
-                  {creatingTenant ? 'Yaradılır...' : 'Təşkilatı Yarat'}
+                  {creatingTenant ? t('common.loading', {}, 'Yaradılır...') : t('tenants.createNew', {}, 'Təşkilatı Yarat')}
                 </button>
               </div>
             </form>

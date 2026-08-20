@@ -6,10 +6,12 @@ import { permissionsApi } from '../api/permissionsApi';
 import { TenantResponse, isTenantActiveStatus, getTenantStatusLabel } from '../types/tenant.types';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export const DashboardPage: React.FC = () => {
   const { user, isSuperAdmin, decodedToken } = useAuth();
   const { showToast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [tenants, setTenants] = useState<TenantResponse[]>([]);
@@ -108,12 +110,12 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight">
-            {isSuperAdmin ? 'Platform Overview' : 'Organization Dashboard'}
+            {isSuperAdmin ? t('dashboard.platformOverview', {}, 'Platform Overview') : t('dashboard.orgDashboard', {}, 'Organization Dashboard')}
           </h2>
           <p className="text-sm text-[#A1A1AA] mt-0.5">
             {isSuperAdmin
-              ? 'Sistem üzrə real tenant, istifadəçi və təhlükəsizlik metrikaları.'
-              : `@${tenantSlug} təşkilatı üzrə istifadəçi və icazə idarəetməsi.`}
+              ? t('dashboard.platformSubtitle', {}, 'Sistem üzrə real tenant, istifadəçi və təhlükəsizlik metrikaları.')
+              : `@${tenantSlug} ${t('users.subtitle', {}, 'təşkilatı üzrə istifadəçi və icazə idarəetməsi.')}`}
           </p>
         </div>
         <div className="flex gap-2.5">
@@ -125,14 +127,14 @@ export const DashboardPage: React.FC = () => {
             <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>
               refresh
             </span>
-            {loading ? 'Yenilənir...' : 'Refresh'}
+            {loading ? t('common.loading', {}, 'Yenilənir...') : t('common.refresh', {}, 'Refresh')}
           </button>
           <button
             onClick={handleExportReport}
             className="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">download</span>
-            Export Report
+            {t('common.exportCsv', {}, 'Export Report')}
           </button>
         </div>
       </div>
@@ -146,7 +148,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Müştəri Şirkətlər (Tenants)</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.totalTenants', {}, 'Müştəri Şirkətlər (Tenants)')}</span>
               <div className="w-8 h-8 rounded-xl bg-[#D946EF]/15 text-[#D946EF] flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">domain</span>
               </div>
@@ -155,7 +157,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{tenants.length}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-emerald-400 font-medium">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
-                <span>{activeTenants.length} Aktiv Təşkilat</span>
+                <span>{activeTenants.length} {t('dashboard.activeTenantsCount', {}, 'Aktiv Təşkilat')}</span>
               </div>
             </div>
           </div>
@@ -165,7 +167,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Aktivlik Səviyyəsi</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.activityRate', {}, 'Aktivlik Səviyyəsi')}</span>
               <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">trending_up</span>
               </div>
@@ -173,7 +175,7 @@ export const DashboardPage: React.FC = () => {
             <div>
               <div className="text-2xl font-bold text-white">{activeRate}%</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-[#A1A1AA]">
-                <span>{activeTenants.length} / {tenants.length} aktiv</span>
+                <span>{activeTenants.length} / {tenants.length} {t('common.active', {}, 'aktiv').toLowerCase()}</span>
               </div>
             </div>
           </div>
@@ -183,7 +185,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Dondurulmuş (Suspended)</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.suspendedTitle', {}, 'Dondurulmuş (Suspended)')}</span>
               <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">block</span>
               </div>
@@ -192,7 +194,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{suspendedTenants.length}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-amber-400 font-medium">
                 <span className="material-symbols-outlined text-sm">warning</span>
-                <span>{suspendedTenants.length > 0 ? 'Dondurulub' : 'Hamısı aktivdir'}</span>
+                <span>{suspendedTenants.length > 0 ? t('dashboard.suspendedBadge', {}, 'Dondurulub') : t('dashboard.allActiveBadge', {}, 'Hamısı aktivdir')}</span>
               </div>
             </div>
           </div>
@@ -202,7 +204,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">İstifadəçilər & Heyət</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.usersAndStaff', {}, 'İstifadəçilər & Heyət')}</span>
               <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">group</span>
               </div>
@@ -211,7 +213,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{totalUsers}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-sky-400 font-medium">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
-                <span>{totalRoles} Aktiv Rol</span>
+                <span>{totalRoles} {t('dashboard.activeRolesCount', {}, 'Aktiv Rol')}</span>
               </div>
             </div>
           </div>
@@ -224,7 +226,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Təşkilat İstifadəçiləri</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.orgUsers', {}, 'Təşkilat İstifadəçiləri')}</span>
               <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">group</span>
               </div>
@@ -233,7 +235,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{totalUsers}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-sky-400 font-medium">
                 <span className="material-symbols-outlined text-sm">manage_accounts</span>
-                <span>İstifadəçiləri idarə et</span>
+                <span>{t('dashboard.manageUsers', {}, 'İstifadəçiləri idarə et')}</span>
               </div>
             </div>
           </div>
@@ -243,7 +245,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Aktiv Rollar</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.activeRoles', {}, 'Aktiv Rollar')}</span>
               <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">admin_panel_settings</span>
               </div>
@@ -252,7 +254,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{totalRoles}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-purple-400 font-medium">
                 <span className="material-symbols-outlined text-sm">security</span>
-                <span>İcazə matrisini tənzimlə</span>
+                <span>{t('dashboard.rolesAndPermissions', {}, 'İcazə matrisini tənzimlə')}</span>
               </div>
             </div>
           </div>
@@ -262,7 +264,7 @@ export const DashboardPage: React.FC = () => {
             className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-5 flex flex-col justify-between transition-all cursor-pointer shadow-lg shadow-black/20"
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-[#A1A1AA]">Sistem İcazələri</span>
+              <span className="text-xs font-medium text-[#A1A1AA]">{t('dashboard.systemPermissions', {}, 'Sistem İcazələri')}</span>
               <div className="w-8 h-8 rounded-xl bg-[#D946EF]/15 text-[#D946EF] flex items-center justify-center">
                 <span className="material-symbols-outlined text-base">receipt_long</span>
               </div>
@@ -271,7 +273,7 @@ export const DashboardPage: React.FC = () => {
               <div className="text-2xl font-bold text-white">{totalPermissions}</div>
               <div className="flex items-center gap-1 mt-1 text-xs text-[#D946EF] font-medium">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
-                <span>Təyin edilmiş icazə</span>
+                <span>{t('common.status', {}, 'Təyin edilmiş icazə')}</span>
               </div>
             </div>
           </div>
@@ -284,7 +286,7 @@ export const DashboardPage: React.FC = () => {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-5 shadow-lg shadow-black/20 space-y-4">
             <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
-              <h3 className="font-bold text-white text-sm">Security & Health</h3>
+              <h3 className="font-bold text-white text-sm">{t('dashboard.securityHealth', {}, 'Security & Health')}</h3>
               <span className="bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
                 ACTIVE
               </span>
@@ -293,7 +295,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span className="text-[#A1A1AA]">Tenant Konteksti</span>
+                  <span className="text-[#A1A1AA]">{t('dashboard.tenantContext', {}, 'Tenant Konteksti')}</span>
                 </div>
                 <span className="text-[#D946EF] font-mono font-bold">@{tenantSlug}</span>
               </div>
@@ -301,7 +303,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span className="text-[#A1A1AA]">RS256 Asimmetrik İmza</span>
+                  <span className="text-[#A1A1AA]">{t('dashboard.asymmetricSignature', {}, 'RS256 Asimmetrik İmza')}</span>
                 </div>
                 <span className="text-emerald-400 font-mono font-bold">2048-bit RSA</span>
               </div>
@@ -309,22 +311,22 @@ export const DashboardPage: React.FC = () => {
               <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <span className="text-[#A1A1AA]">Token Rotation</span>
+                  <span className="text-[#A1A1AA]">{t('dashboard.tokenRotation', {}, 'Token Rotation')}</span>
                 </div>
-                <span className="text-emerald-400 font-bold">Aktiv</span>
+                <span className="text-emerald-400 font-bold">{t('common.active', {}, 'Aktiv')}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-5 shadow-lg shadow-black/20 space-y-3">
-            <h3 className="font-bold text-white text-sm">Sürətli Keçidlər</h3>
+            <h3 className="font-bold text-white text-sm">{t('dashboard.quickLinks', {}, 'Sürətli Keçidlər')}</h3>
             <div className="space-y-2">
               {isSuperAdmin && (
                 <button
                   onClick={() => navigate('/tenants')}
                   className="w-full py-2.5 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] rounded-xl text-xs font-semibold text-white flex items-center justify-between transition-colors cursor-pointer"
                 >
-                  <span>Müştərilər & Modul Abunəlikləri</span>
+                  <span>{t('dashboard.tenantsAndModules', {}, 'Müştərilər & Modul Abunəlikləri')}</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
               )}
@@ -332,14 +334,14 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/users')}
                 className="w-full py-2.5 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] rounded-xl text-xs font-semibold text-white flex items-center justify-between transition-colors cursor-pointer"
               >
-                <span>İstifadəçiləri İdarə Et ({totalUsers})</span>
+                <span>{t('dashboard.manageUsers', {}, 'İstifadəçiləri İdarə Et')} ({totalUsers})</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
               <button
                 onClick={() => navigate('/roles')}
                 className="w-full py-2.5 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] rounded-xl text-xs font-semibold text-white flex items-center justify-between transition-colors cursor-pointer"
               >
-                <span>Rollar və İcazələr Matrisi ({totalPermissions})</span>
+                <span>{t('dashboard.rolesAndPermissions', {}, 'Rollar və İcazələr Matrisi')} ({totalPermissions})</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
               {isSuperAdmin && (
@@ -347,7 +349,7 @@ export const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/security')}
                   className="w-full py-2.5 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] rounded-xl text-xs font-semibold text-white flex items-center justify-between transition-colors cursor-pointer"
                 >
-                  <span>JWKS Endpoint &amp; Açıq Açarlar</span>
+                  <span>{t('security.title', {}, 'JWKS Endpoint & Açıq Açarlar')}</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </button>
               )}
@@ -361,14 +363,14 @@ export const DashboardPage: React.FC = () => {
             <div className="bg-[#18181B] border border-[#27272A] rounded-2xl overflow-hidden shadow-lg shadow-black/20">
               <div className="p-5 border-b border-[#27272A] flex justify-between items-center bg-[#141416]">
                 <div>
-                  <h3 className="font-bold text-white text-sm">Son Qeydiyyatlı Müştərilər (Tenants)</h3>
-                  <p className="text-xs text-[#A1A1AA] mt-0.5">Platformadakı real təşkilatların siyahısı</p>
+                  <h3 className="font-bold text-white text-sm">{t('dashboard.recentTenants', {}, 'Son Qeydiyyatlı Müştərilər (Tenants)')}</h3>
+                  <p className="text-xs text-[#A1A1AA] mt-0.5">{t('dashboard.recentTenantsDesc', {}, 'Platformadakı real təşkilatların siyahısı')}</p>
                 </div>
                 <button
                   onClick={() => navigate('/tenants')}
                   className="btn-secondary px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
                 >
-                  Bütün Müştərilər ({tenants.length})
+                  {t('dashboard.allTenants', {}, 'Bütün Müştərilər')} ({tenants.length})
                 </button>
               </div>
 
@@ -376,11 +378,11 @@ export const DashboardPage: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[#141416] border-b border-[#27272A] text-[11px] text-[#71717A] uppercase tracking-wider font-semibold">
-                      <th className="py-3 px-4">Təşkilat Adı</th>
-                      <th className="py-3 px-4">Tenant Slug</th>
-                      <th className="py-3 px-4">Domen</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Detallar</th>
+                      <th className="py-3 px-4">{t('tenants.tenantName', {}, 'Təşkilat Adı')}</th>
+                      <th className="py-3 px-4">{t('tenants.tenantSlug', {}, 'Tenant Slug')}</th>
+                      <th className="py-3 px-4">{t('common.domain', {}, 'Domen')}</th>
+                      <th className="py-3 px-4">{t('common.status', {}, 'Status')}</th>
+                      <th className="py-3 px-4 text-right">{t('common.viewDetails', {}, 'Detallar')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#27272A]/60 text-xs">
@@ -389,29 +391,29 @@ export const DashboardPage: React.FC = () => {
                         <td colSpan={5} className="py-10 text-center text-[#A1A1AA]">
                           <span className="inline-flex items-center gap-2">
                             <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-                            Məlumatlar yüklənir...
+                            {t('common.loading', {}, 'Məlumatlar yüklənir...')}
                           </span>
                         </td>
                       </tr>
                     ) : tenants.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-10 text-center text-[#A1A1AA]">
-                          Sistemdə hələ heç bir müştəri təşkilatı yoxdur.
+                          {t('tenants.title', {}, 'Sistemdə hələ heç bir müştəri təşkilatı yoxdur.')}
                         </td>
                       </tr>
                     ) : (
-                      tenants.slice(0, 6).map((t) => {
-                        const statusLabel = getTenantStatusLabel(t.status, t.suspendedAt);
+                      tenants.slice(0, 6).map((tItem) => {
+                        const statusLabel = getTenantStatusLabel(tItem.status, tItem.suspendedAt);
 
                         return (
                           <tr
-                            key={t.id}
-                            onClick={() => navigate(`/tenants/${t.id}`)}
+                            key={tItem.id}
+                            onClick={() => navigate(`/tenants/${tItem.id}`)}
                             className="hover:bg-white/[0.02] transition-colors cursor-pointer"
                           >
-                            <td className="py-3 px-4 font-bold text-white">{t.name}</td>
-                            <td className="py-3 px-4 font-mono text-[#D946EF]">{t.slug}</td>
-                            <td className="py-3 px-4 text-[#A1A1AA]">{t.domain || '-'}</td>
+                            <td className="py-3 px-4 font-bold text-white">{tItem.name}</td>
+                            <td className="py-3 px-4 font-mono text-[#D946EF]">{tItem.slug}</td>
+                            <td className="py-3 px-4 text-[#A1A1AA]">{tItem.domain || '-'}</td>
                             <td className="py-3 px-4">
                               <span
                                 className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
@@ -423,14 +425,18 @@ export const DashboardPage: React.FC = () => {
                                 }`}
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                {statusLabel}
+                                {statusLabel === 'Active'
+                                  ? t('common.active', {}, 'Active')
+                                  : statusLabel === 'Suspended'
+                                  ? t('common.suspended', {}, 'Suspended')
+                                  : t('common.terminated', {}, 'Terminated')}
                               </span>
                             </td>
                             <td className="py-3 px-4 text-right">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(`/tenants/${t.id}`);
+                                  navigate(`/tenants/${tItem.id}`);
                                 }}
                                 className="p-1 text-[#A1A1AA] hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
                               >
@@ -459,7 +465,7 @@ export const DashboardPage: React.FC = () => {
                       @{tenantSlug}
                     </span>
                     <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active Tenant
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> {t('common.active', {}, 'Active Tenant')}
                     </span>
                   </div>
                 </div>
@@ -467,11 +473,11 @@ export const DashboardPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl">
-                  <span className="text-[#71717A] block mb-1">Hesab Növü</span>
+                  <span className="text-[#71717A] block mb-1">{t('common.role', {}, 'Hesab Növü')}</span>
                   <span className="font-bold text-white text-sm">Tenant Administrator</span>
                 </div>
                 <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl">
-                  <span className="text-[#71717A] block mb-1">İcazə Sahəsi</span>
+                  <span className="text-[#71717A] block mb-1">{t('roles.permissions', {}, 'İcazə Sahəsi')}</span>
                   <span className="font-bold text-white text-sm">Tenant-Scoped Isolation</span>
                 </div>
               </div>
@@ -482,14 +488,14 @@ export const DashboardPage: React.FC = () => {
                   className="btn-primary px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">person_add</span>
-                  Yeni İstifadəçi Əlavə Et
+                  {t('users.createNew', {}, 'Yeni İstifadəçi Əlavə Et')}
                 </button>
                 <button
                   onClick={() => navigate('/roles')}
                   className="btn-secondary px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">security</span>
-                  Rolların İdarə Edilməsi
+                  {t('roles.title', {}, 'Rolların İdarə Edilməsi')}
                 </button>
               </div>
             </div>

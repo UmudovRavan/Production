@@ -745,7 +745,7 @@ const CrmDashboardPage = () => {
                   >
                     {u.avatarUrl ? (
                       <img
-                        src={u.avatarUrl.startsWith('http') ? u.avatarUrl : `https://localhost:7114${u.avatarUrl}`}
+                        src={u.avatarUrl.startsWith('http') ? u.avatarUrl : `https://api-crm.altensor.com${u.avatarUrl}`}
                         alt="Avatar"
                         className="w-5 h-5 rounded-full object-cover shrink-0 border border-[#3F3F46]"
                       />

@@ -3,7 +3,7 @@ import { authService } from '../api';
 
 const SIGNALR_HUB_URL =
     import.meta.env.VITE_SIGNALR_HUB_URL ||
-    (import.meta.env.VITE_TMS_API_URL ? `${import.meta.env.VITE_TMS_API_URL.replace(/\/api\/?$/, '')}/hubs/notification` : 'http://31.57.77.199:5053/hubs/notification');
+    (import.meta.env.VITE_TMS_API_URL ? `${import.meta.env.VITE_TMS_API_URL.replace(/\/api\/?$/, '')}/hubs/notification` : 'https://api-tms.altensor.com/hubs/notification');
 
 /**
  * Enterprise-grade SignalR Service

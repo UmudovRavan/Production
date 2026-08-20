@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { platformApi } from '../api/platformApi';
 import { permissionsApi } from '../api/permissionsApi';
 import SettingsModal from '../components/common/SettingsModal';
@@ -11,14 +12,14 @@ const desktopApps = [
   {
     id: 'tasks',
     name: 'Task Management',
-    route: 'http://31.57.77.199:8082',
+    route: import.meta.env.VITE_TMS_WEB_URL || 'https://tms.altensor.com/dashboard',
     iconBg: '#3B82F6',
     icon: 'task_alt'
   },
   {
     id: 'crm',
     name: 'Altensor CRM',
-    route: 'http://31.57.77.199:8083',
+    route: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com/crm/dashboard',
     iconBg: '#D946EF',
     icon: 'filter_alt'
   },
@@ -32,10 +33,10 @@ const desktopApps = [
 ];
 
 export const DashboardLayout: React.FC = () => {
+  const navigate = useNavigate();
   const { user, decodedToken, logout, isSuperAdmin } = useAuth();
   const { showToast } = useToast();
-  const navigate = useNavigate();
-
+  const { t } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isBrandMenuOpen, setIsBrandMenuOpen] = useState(false);
   const [isAppsSubmenuOpen, setIsAppsSubmenuOpen] = useState(false);
@@ -111,6 +112,9 @@ export const DashboardLayout: React.FC = () => {
       return;
     }
 
+    const savedName = tenantName.trim();
+    const savedSlug = tenantSlug.trim().toLowerCase();
+
     setCreatingTenant(true);
     try {
       let currentModules = availableModules;
@@ -131,8 +135,8 @@ export const DashboardLayout: React.FC = () => {
         .map((m) => m.id);
 
       const created = await platformApi.createTenant({
-        name: tenantName.trim(),
-        slug: tenantSlug.trim().toLowerCase(),
+        name: savedName,
+        slug: savedSlug,
         domain: tenantDomain.trim() || undefined,
         adminFullName: adminFullName.trim(),
         adminEmail: adminEmail.trim(),
@@ -141,7 +145,7 @@ export const DashboardLayout: React.FC = () => {
         moduleCodes: selectedModules
       });
 
-      showToast('success', `${tenantName} təşkilatı uğurla yaradıldı!`, 'Uğurlu');
+      showToast('success', `${savedName} təşkilatı uğurla yaradıldı!`, 'Uğurlu');
       setIsCreateTenantOpen(false);
       setTenantName('');
       setTenantSlug('');
@@ -149,13 +153,40 @@ export const DashboardLayout: React.FC = () => {
       setAdminFullName('');
       setAdminEmail('');
 
+      let resolvedId =
+        (created as any)?.id ||
+        (created as any)?.data?.id ||
+        (created as any)?.tenantId ||
+        (created as any)?.data?.tenantId;
+
+      // Fallback: If backend returns success without direct ID, lookup the newly created tenant
+      if (!resolvedId) {
+        try {
+          const freshTenants = await platformApi.getTenants();
+          const newlyCreated = freshTenants.find(
+            (t) =>
+              t.slug?.toLowerCase() === savedSlug.toLowerCase() ||
+              t.name?.toLowerCase() === savedName.toLowerCase()
+          );
+          if (newlyCreated?.id) {
+            resolvedId = newlyCreated.id;
+          }
+        } catch {
+          // ignore lookup error
+        }
+      }
+
       window.dispatchEvent(new CustomEvent('tenant-created'));
 
       // Automatically navigate to the newly created tenant's detail page
-      if (created && created.id) {
-        navigate(`/tenants/${created.id}`);
+      if (resolvedId) {
+        navigate(`/tenants/${resolvedId}`);
       } else {
-        navigate('/tenants');
+        if (window.location.pathname === '/tenants') {
+          window.location.reload();
+        } else {
+          navigate('/tenants');
+        }
       }
     } catch (err: any) {
       showToast('error', err.message || 'Müştəri yaradılarkən xəta baş verdi', 'Xəta');
@@ -169,12 +200,12 @@ export const DashboardLayout: React.FC = () => {
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   const menuItems = [
-    { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    ...(isSuperAdmin ? [{ to: '/tenants', label: 'Tenants', icon: 'domain' }] : []),
-    { to: '/users', label: 'Identity Providers / Users', icon: 'vpn_key' },
-    { to: '/roles', label: 'Policy Engine / Roles', icon: 'security' },
-    { to: '/permissions', label: 'Audit Logs / Permissions', icon: 'receipt_long' },
-    ...(isSuperAdmin ? [{ to: '/security', label: 'JWKS Endpoint', icon: 'key' }] : [])
+    { to: '/dashboard', label: t('nav.dashboard', {}, 'Dashboard'), icon: 'dashboard' },
+    ...(isSuperAdmin ? [{ to: '/tenants', label: t('nav.tenants', {}, 'Tenants'), icon: 'domain' }] : []),
+    { to: '/users', label: t('nav.users', {}, 'Users'), icon: 'vpn_key' },
+    { to: '/roles', label: t('nav.roles', {}, 'Roles & Permissions'), icon: 'security' },
+    { to: '/permissions', label: t('roles.permissions', {}, 'Permissions'), icon: 'receipt_long' },
+    ...(isSuperAdmin ? [{ to: '/security', label: t('nav.security', {}, 'JWKS Endpoint'), icon: 'key' }] : [])
   ];
 
   const modulesToDisplay = availableModules.length > 0 ? availableModules : [
@@ -211,11 +242,11 @@ export const DashboardLayout: React.FC = () => {
 
                 {!isCollapsed && (
                   <div className="flex flex-col text-left min-w-0">
-                    <span className="font-bold text-white text-[13.5px] leading-snug tracking-tight truncate">
-                      Altensor
+                    <span className="font-bold text-white text-[13px] leading-snug tracking-tight truncate">
+                      Altensor Auth
                     </span>
-                    <span className="text-[11px] text-[#A1A1AA] font-normal leading-none truncate">
-                      Auth Gateway
+                    <span className="text-[10px] text-[#A1A1AA] font-mono leading-none truncate">
+                      {isSuperAdmin ? t('nav.superAdmin', {}, 'Super Admin') : 'Tenant Admin'}
                     </span>
                   </div>
                 )}
@@ -243,7 +274,7 @@ export const DashboardLayout: React.FC = () => {
                   >
                     <div className="flex items-center gap-3">
                       <span className="material-symbols-outlined text-base text-[#A1A1AA]">apps</span>
-                      <span>Apps</span>
+                      <span>{t('common.applications', {}, 'Apps')}</span>
                     </div>
                     <span className="material-symbols-outlined text-xs text-[#71717A]">chevron_right</span>
                   </div>
@@ -285,7 +316,7 @@ export const DashboardLayout: React.FC = () => {
                   className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base text-[#A1A1AA]">settings</span>
-                  <span>Settings</span>
+                  <span>{t('nav.settings', {}, 'Settings')}</span>
                 </button>
 
                 {/* JWKS Endpoint (SuperAdmin Only) */}
@@ -298,21 +329,9 @@ export const DashboardLayout: React.FC = () => {
                     className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-base text-[#A1A1AA]">key</span>
-                    <span>JWKS Endpoint</span>
+                    <span>{t('security.jwksUrl', {}, 'JWKS Endpoint')}</span>
                   </button>
                 )}
-
-                {/* Profile Modal Trigger */}
-                <button
-                  onClick={() => {
-                    setIsBrandMenuOpen(false);
-                    setIsSettingsModalOpen(true);
-                  }}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[#2C2C2E] hover:text-white transition-colors text-left w-full cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-base text-[#A1A1AA]">account_circle</span>
-                  <span>Profile</span>
-                </button>
 
                 <div className="h-px bg-[#2C2C2E] my-1"></div>
 
@@ -322,7 +341,7 @@ export const DashboardLayout: React.FC = () => {
                   className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-left w-full text-[#A1A1AA] cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">logout</span>
-                  <span>Log out</span>
+                  <span>{t('nav.logout', {}, 'Log out')}</span>
                 </button>
               </div>
             )}
@@ -361,12 +380,12 @@ export const DashboardLayout: React.FC = () => {
             className={`flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-[13px] font-normal text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white transition-colors cursor-pointer ${
               isCollapsed ? 'justify-center px-0 py-2' : ''
             }`}
-            title={isCollapsed ? 'Expand' : 'Collapse'}
+            title={isCollapsed ? t('common.expandMenu', {}, 'Expand') : t('common.collapseMenu', {}, 'Collapse')}
           >
             <span className="material-symbols-outlined text-[18px] shrink-0">
               {isCollapsed ? 'chevron_right' : 'chevron_left'}
             </span>
-            {!isCollapsed && <span>Collapse</span>}
+            {!isCollapsed && <span>{t('common.collapseMenu', {}, 'Collapse')}</span>}
           </button>
         </div>
       </aside>
@@ -388,7 +407,7 @@ export const DashboardLayout: React.FC = () => {
               </span>
               <input
                 type="text"
-                placeholder="Axtarış..."
+                placeholder={t('nav.searchPlaceholder', {}, 'Axtarış...')}
                 className="w-full pl-9 pr-3 py-1.5 bg-[#121214] border border-[#27272A] rounded-xl text-xs text-white placeholder-[#71717A] outline-none focus:border-[#D946EF] transition-colors"
               />
             </div>
@@ -399,7 +418,7 @@ export const DashboardLayout: React.FC = () => {
                 className="btn-primary px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                Create Tenant
+                {t('nav.newTenant', {}, 'Create Tenant')}
               </button>
             )}
 
@@ -407,7 +426,7 @@ export const DashboardLayout: React.FC = () => {
             <button
               onClick={() => setIsSettingsModalOpen(true)}
               className="w-8 h-8 rounded-full bg-[#27272A] hover:bg-[#3F3F46] text-[#D946EF] font-bold text-xs flex items-center justify-center border border-[#3F3F46] transition-colors cursor-pointer"
-              title={`${displayName} - Tənzimləmələr`}
+              title={`${displayName} - ${t('nav.settings', {}, 'Tənzimləmələr')}`}
             >
               {avatarInitial}
             </button>
@@ -420,10 +439,10 @@ export const DashboardLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Create Tenant Modal */}
+      {/* Quick Create Tenant Modal */}
       {isCreateTenantOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center">

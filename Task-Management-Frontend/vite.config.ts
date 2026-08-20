@@ -8,7 +8,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://localhost:7288',
+        target: 'https://api-tms.altensor.com',
         changeOrigin: true,
         secure: false,
       },

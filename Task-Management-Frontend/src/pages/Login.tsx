@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../api';
 import { useAuth, useTheme } from '../context';
+import { useLanguage } from '../context/LanguageContext';
 import type { AxiosError } from 'axios';
 import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import crmHeroPreview from '../assets/crm_hero_preview.png';
@@ -11,6 +12,7 @@ const Login: React.FC = () => {
     const location = useLocation();
     const { login, isAuthenticated, authChecked, hasModule } = useAuth();
     const { isDark, toggleTheme } = useTheme();
+    const { t, language, setLanguage, languages } = useLanguage();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -108,16 +110,37 @@ const Login: React.FC = () => {
                 isDark ? 'bg-[#08090C] text-white' : 'bg-[#F8FAFC] text-slate-900'
             }`}
         >
-            {/* Top Floating Bar for Theme Toggle */}
-            <div className="absolute top-6 right-6 z-50 flex items-center gap-3 pointer-events-auto">
+            {/* Top Right Actions */}
+            <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+                {/* Language Switcher */}
+                <div className="flex items-center bg-slate-100 dark:bg-white/10 rounded-xl p-0.5 border border-slate-200/60 dark:border-white/10">
+                    {languages.map((lang) => (
+                        <button
+                            key={lang.code}
+                            type="button"
+                            onClick={() => setLanguage(lang.code)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
+                                language === lang.code
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : isDark
+                                    ? 'text-slate-400 hover:text-white'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            {lang.code.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Theme Toggle */}
                 <button
                     onClick={toggleTheme}
-                    className={`p-2.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                         isDark
-                            ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
-                            : 'bg-white/90 border-slate-200 text-slate-700 hover:text-slate-900 shadow-sm hover:bg-white'
+                            ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs'
                     }`}
-                    title={isDark ? 'İşıqlı Rejimə Keç' : 'Qaranlıq Rejimə Keç'}
+                    title={isDark ? t('settings.lightTheme', {}, 'İşıqlı Rejimə Keç') : t('settings.darkTheme', {}, 'Qaranlıq Rejimə Keç')}
                     type="button"
                 >
                     <span className="material-symbols-outlined text-lg leading-none block">
@@ -228,10 +251,10 @@ const Login: React.FC = () => {
                                 isDark ? 'text-white' : 'text-slate-900'
                             }`}
                         >
-                            Xoş Gəlmisiniz
+                            {t('auth.welcomeBack', {}, 'Xoş Gəlmisiniz')}
                         </h2>
                         <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                            Şirkət hesabınıza daxil olmaq üçün məlumatlarınızı qeyd edin.
+                            {t('auth.signInToAccount', {}, 'Şirkət hesabınıza daxil olmaq üçün məlumatlarınızı qeyd edin.')}
                         </p>
                     </div>
 
@@ -257,7 +280,7 @@ const Login: React.FC = () => {
                                 }`}
                                 htmlFor="tenantSlug"
                             >
-                                Şirkət Kodu / Workspace Slug
+                                {t('auth.companyCode', {}, 'Şirkət Kodu / Workspace Slug')}
                             </label>
                             <div
                                 className={`relative flex items-center h-12 rounded-xl border transition-all duration-200 ${
@@ -292,7 +315,7 @@ const Login: React.FC = () => {
                                 }`}
                                 htmlFor="email"
                             >
-                                E-poçt ünvanı
+                                {t('auth.email', {}, 'E-poçt ünvanı')}
                             </label>
                             <div
                                 className={`relative flex items-center h-12 rounded-xl border transition-all duration-200 ${
@@ -328,13 +351,13 @@ const Login: React.FC = () => {
                                     }`}
                                     htmlFor="password"
                                 >
-                                    Şifrə
+                                    {t('auth.password', {}, 'Şifrə')}
                                 </label>
                                 <Link
                                     className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
                                     to={formData.tenantSlug ? `/forgot-password?tenant=${encodeURIComponent(formData.tenantSlug)}` : '/forgot-password'}
                                 >
-                                    Şifrəni unutmusunuz?
+                                    {t('auth.forgotPasswordQuestion', {}, 'Şifrəni unutmusunuz?')}
                                 </Link>
                             </div>
                             <div
@@ -380,10 +403,10 @@ const Login: React.FC = () => {
                             {loading ? (
                                 <>
                                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                                    <span>Daxil olunur...</span>
+                                    <span>{t('auth.loggingIn', {}, 'Daxil olunur...')}</span>
                                 </>
                             ) : (
-                                'Daxil Ol'
+                                t('auth.login', {}, 'Daxil Ol')
                             )}
                         </button>
                     </form>

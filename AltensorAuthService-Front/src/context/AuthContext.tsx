@@ -146,12 +146,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('error', 'Sessiyanın vaxtı bitdi. Zəhmət olmasa yenidən daxil olun.', 'Sessiya Bitdi');
     };
 
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === 'altensor_access_token' ||
+        e.key === 'accessToken' ||
+        e.key === 'authToken' ||
+        e.key === 'token'
+      ) {
+        const newToken = storage.getAccessToken();
+        const newRefresh = storage.getRefreshToken();
+        if (newToken) {
+          setAccessToken(newToken);
+          setRefreshToken(newRefresh);
+        } else {
+          setAccessToken(null);
+          setRefreshToken(null);
+          setUser(null);
+        }
+      }
+    };
+
     window.addEventListener('auth-tokens-refreshed', handleTokensRefreshed);
     window.addEventListener('auth-session-expired', handleSessionExpired);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('auth-tokens-refreshed', handleTokensRefreshed);
       window.removeEventListener('auth-session-expired', handleSessionExpired);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [showToast]);
 

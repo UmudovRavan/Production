@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || 'http://31.57.77.199:5051/api';
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || 'https://api-info.altensor.com/api';
 
 /**
  * Dedicated Axios Client for AltensorAuthService

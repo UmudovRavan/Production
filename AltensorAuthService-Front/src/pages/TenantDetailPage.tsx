@@ -9,6 +9,7 @@ import {
   getTenantStatusLabel
 } from '../types/tenant.types';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { formatDate } from '../utils/formatters';
 import ActionConfirmModal, { ActionModalVariant } from '../components/common/ActionConfirmModal';
 
@@ -16,6 +17,7 @@ export const TenantDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [tenant, setTenant] = useState<TenantDetailResponse | null>(null);
   const [availableModules, setAvailableModules] = useState<Array<{ id: string; code: string; name: string }>>([]);
@@ -48,16 +50,23 @@ export const TenantDetailPage: React.FC = () => {
     description: '',
     variant: 'warning',
     icon: 'block',
-    confirmText: 'Təsdiq Et',
+    confirmText: 'Dondur',
     showReasonInput: false,
     actionType: 'TOGGLE_TENANT_SUSPEND'
   });
 
-  // Fetch real modules from permissions catalog
-  useEffect(() => {
-    permissionsApi.getPermissions().then((perms) => {
+  const fetchTenantDetail = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const [tenantData, permsData] = await Promise.all([
+        platformApi.getTenantById(id),
+        permissionsApi.getPermissions().catch(() => [])
+      ]);
+      setTenant(tenantData);
+
       const map: Record<string, { id: string; code: string; name: string }> = {};
-      perms.forEach((p) => {
+      permsData.forEach((p) => {
         if (p.moduleId && p.moduleCode) {
           const codeUpper = p.moduleCode.toUpperCase();
           if (!map[codeUpper]) {
@@ -69,24 +78,17 @@ export const TenantDetailPage: React.FC = () => {
           }
         }
       });
-      const list = Object.values(map);
-      if (list.length > 0) {
-        setAvailableModules(list);
-        if (!selectedModuleId) {
-          setSelectedModuleId(list[0].id);
-        }
+      const modules = Object.values(map).length > 0 ? Object.values(map) : [
+        { id: 'crm', code: 'CRM', name: 'Altensor CRM' },
+        { id: 'tasks', code: 'TASK', name: 'Task Management' },
+        { id: 'inventory', code: 'INVENTORY', name: 'Inventory Management' }
+      ];
+      setAvailableModules(modules);
+      if (modules.length > 0) {
+        setSelectedModuleId(modules[0].id);
       }
-    }).catch(() => {});
-  }, [selectedModuleId]);
-
-  const fetchTenantDetail = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const data = await platformApi.getTenantById(id);
-      setTenant(data);
     } catch (err: any) {
-      showToast('error', err.message || 'Müştəri məlumatlarını yükləmək mümkün olmadı', 'Xəta');
+      showToast('error', err.message || 'Error loading tenant details', 'Error');
     } finally {
       setLoading(false);
     }
@@ -103,25 +105,25 @@ export const TenantDetailPage: React.FC = () => {
     if (isActive) {
       setConfirmModal({
         isOpen: true,
-        title: 'Müştəri Hesabını Dondur',
-        description: 'Təşkilat dondurulduqda bu müştərinin bütün mikroservislərə və API şlüzünə girişi dərhal dayandırılacaq.',
+        title: t('tenants.suspendTenant', {}, 'Müştəri Hesabını Dondur'),
+        description: 'Təşkilat dondurulduqda istifadəçilərin sistemə girişi və bütün aktiv modul abunəlikləri müvəqqəti bloklanacaq.',
         itemHighlight: `${tenant.name} (@${tenant.slug})`,
         variant: 'warning',
         icon: 'block',
-        confirmText: 'Hesabı Dondur',
+        confirmText: t('tenants.suspendTenant', {}, 'Dondur'),
         showReasonInput: true,
-        reasonPlaceholder: 'Dondurma səbəbini qeyd edin (məs: ödəniş, profilaktika)...',
+        reasonPlaceholder: 'Dondurma səbəbini qeyd edin...',
         actionType: 'TOGGLE_TENANT_SUSPEND'
       });
     } else {
       setConfirmModal({
         isOpen: true,
-        title: 'Müştəri Hesabını Aktivləşdir',
+        title: t('tenants.activateTenant', {}, 'Müştəri Hesabını Aktivləşdir'),
         description: 'Təşkilat aktivləşdirildikdə istifadəçilərin autentifikasiyası və aktiv modul abunəlikləri bərpa ediləcək.',
         itemHighlight: `${tenant.name} (@${tenant.slug})`,
         variant: 'success',
         icon: 'check_circle',
-        confirmText: 'Aktivləşdir',
+        confirmText: t('tenants.activateTenant', {}, 'Aktivləşdir'),
         showReasonInput: false,
         actionType: 'TOGGLE_TENANT_SUSPEND'
       });
@@ -134,12 +136,12 @@ export const TenantDetailPage: React.FC = () => {
     if (!isSuspended) {
       setConfirmModal({
         isOpen: true,
-        title: `${moduleName} Modulunu Dondur`,
+        title: `${moduleName} - ${t('common.suspended', {}, 'Dondur')}`,
         description: `Bu şirkətin ${moduleName} modulu üzrə hüquqları dondurulacaq.`,
         itemHighlight: `${moduleName} (${tenant.name})`,
         variant: 'warning',
         icon: 'pause_circle',
-        confirmText: 'Modulu Dondur',
+        confirmText: t('common.suspended', {}, 'Modulu Dondur'),
         showReasonInput: true,
         reasonPlaceholder: 'Modulu dondurma səbəbini qeyd edin...',
         actionType: 'TOGGLE_MODULE_SUSPEND',
@@ -150,12 +152,12 @@ export const TenantDetailPage: React.FC = () => {
     } else {
       setConfirmModal({
         isOpen: true,
-        title: `${moduleName} Modulunu Aktivləşdir`,
+        title: `${moduleName} - ${t('common.active', {}, 'Aktivləşdir')}`,
         description: `Bu şirkətin ${moduleName} moduluna çıxışı dərhal bərpa olunacaq.`,
         itemHighlight: `${moduleName} (${tenant.name})`,
         variant: 'success',
         icon: 'play_circle',
-        confirmText: 'Aktivləşdir',
+        confirmText: t('common.active', {}, 'Aktivləşdir'),
         showReasonInput: false,
         actionType: 'TOGGLE_MODULE_SUSPEND',
         targetModuleId: moduleId,
@@ -170,12 +172,12 @@ export const TenantDetailPage: React.FC = () => {
 
     setConfirmModal({
       isOpen: true,
-      title: 'Modul Abunəliyini Sil',
+      title: t('common.delete', {}, 'Modul Abunəliyini Sil'),
       description: `Diqqət! Bu əməliyyat geri qaytarılmır. ${moduleName} modulu bu təşkilatın abunəliklərindən birdəfəlik çıxarılacaq.`,
       itemHighlight: `${moduleName} (${tenant.name})`,
       variant: 'danger',
       icon: 'delete_forever',
-      confirmText: 'Abunəliyi Sil',
+      confirmText: t('common.delete', {}, 'Abunəliyi Sil'),
       showReasonInput: false,
       actionType: 'REMOVE_MODULE',
       targetModuleId: moduleId,
@@ -191,29 +193,29 @@ export const TenantDetailPage: React.FC = () => {
         const isActive = isTenantActiveStatus(tenant.status, tenant.suspendedAt);
         if (isActive) {
           await platformApi.suspendTenant(tenant.id, reason || undefined);
-          showToast('warning', `${tenant.name} hesabı donduruldu!`, 'Donduruldu');
+          showToast('warning', `${tenant.name} suspended`, 'Warning');
         } else {
           await platformApi.unsuspendTenant(tenant.id);
-          showToast('success', `${tenant.name} hesabı yenidən aktivləşdirildi!`, 'Aktivləşdirildi');
+          showToast('success', `${tenant.name} unsuspended`, 'Success');
         }
       } else if (confirmModal.actionType === 'TOGGLE_MODULE_SUSPEND') {
         if (!confirmModal.targetModuleId) return;
         if (!confirmModal.isSuspendedState) {
           await platformApi.suspendModule(tenant.id, confirmModal.targetModuleId, reason || undefined);
-          showToast('warning', `${confirmModal.targetModuleName} modulu donduruldu!`, 'Modul Donduruldu');
+          showToast('warning', `${confirmModal.targetModuleName} suspended`, 'Warning');
         } else {
           await platformApi.unsuspendModule(tenant.id, confirmModal.targetModuleId);
-          showToast('success', `${confirmModal.targetModuleName} modulu aktivləşdirildi!`, 'Modul Aktivləşdirildi');
+          showToast('success', `${confirmModal.targetModuleName} unsuspended`, 'Success');
         }
       } else if (confirmModal.actionType === 'REMOVE_MODULE') {
         if (!confirmModal.targetModuleId) return;
         await platformApi.removeModule(tenant.id, confirmModal.targetModuleId);
-        showToast('success', `${confirmModal.targetModuleName} modulu silindi!`, 'Silindi');
+        showToast('success', `${confirmModal.targetModuleName} deleted`, 'Success');
       }
 
       fetchTenantDetail();
     } catch (err: any) {
-      showToast('error', err.message || 'Əməliyyat icra olunmadı', 'Xəta');
+      showToast('error', err.message || 'Action failed', 'Error');
       throw err;
     }
   };
@@ -228,12 +230,12 @@ export const TenantDetailPage: React.FC = () => {
         moduleId: selectedModuleId,
         expiresAt: expiryDate ? new Date(expiryDate).toISOString() : undefined
       });
-      showToast('success', `Modul abunəliyi təşkilata əlavə edildi!`, 'Modul Əlavə Edildi');
+      showToast('success', `Modul abunəliyi təşkilata əlavə edildi!`, 'Success');
       setIsAddModuleOpen(false);
       setExpiryDate('');
       fetchTenantDetail();
     } catch (err: any) {
-      showToast('error', err.message || 'Modul əlavə edilərkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error adding module', 'Error');
     } finally {
       setAddingModule(false);
     }
@@ -244,7 +246,7 @@ export const TenantDetailPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-[60vh]">
         <span className="inline-flex items-center gap-2 text-[#A1A1AA] text-xs">
           <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-          Müştəri detalları yüklənir...
+          {t('common.loading', {}, 'Müştəri detalları yüklənir...')}
         </span>
       </div>
     );
@@ -256,13 +258,13 @@ export const TenantDetailPage: React.FC = () => {
         <div className="w-12 h-12 bg-rose-500/15 text-rose-400 rounded-full mx-auto flex items-center justify-center mb-3">
           <span className="material-symbols-outlined text-2xl">error</span>
         </div>
-        <h3 className="text-base font-bold text-white mb-2">Müştəri Tapılmadı</h3>
+        <h3 className="text-base font-bold text-white mb-2">{t('common.none', {}, 'Müştəri Tapılmadı')}</h3>
         <p className="text-[#A1A1AA] text-xs mb-4">Axtardığınız tenant mövcud deyil və ya silinib.</p>
         <button
           onClick={() => navigate('/tenants')}
           className="px-4 py-2 btn-primary rounded-xl text-xs font-semibold cursor-pointer"
         >
-          Müştərilər Siyahısına Qayıt
+          {t('common.cancel', {}, 'Müştərilər Siyahısına Qayıt')}
         </button>
       </div>
     );
@@ -270,6 +272,13 @@ export const TenantDetailPage: React.FC = () => {
 
   const isActive = isTenantActiveStatus(tenant.status, tenant.suspendedAt);
   const statusLabel = getTenantStatusLabel(tenant.status, tenant.suspendedAt);
+  const localizedStatus =
+    statusLabel === 'Active'
+      ? t('common.active', {}, 'Active')
+      : statusLabel === 'Suspended'
+      ? t('common.suspended', {}, 'Suspended')
+      : statusLabel;
+
   const subscriptionsList =
     tenant.subscriptions ||
     (tenant as any).Subscriptions ||
@@ -291,7 +300,7 @@ export const TenantDetailPage: React.FC = () => {
           <button
             onClick={() => navigate('/tenants')}
             className="p-1.5 rounded-xl border border-[#27272A] hover:bg-[#27272A] text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-            title="Geri qayıt"
+            title="Back"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           </button>
@@ -301,7 +310,7 @@ export const TenantDetailPage: React.FC = () => {
                 onClick={() => navigate('/tenants')}
                 className="text-[#71717A] hover:text-[#D946EF] cursor-pointer text-xs font-medium"
               >
-                Tenants
+                {t('tenants.title', {}, 'Tenants')}
               </span>
               <span className="text-[#71717A] text-xs">/</span>
               <span className="text-white text-xs font-bold">{tenant.name}</span>
@@ -319,7 +328,7 @@ export const TenantDetailPage: React.FC = () => {
             <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
               refresh
             </span>
-            Yenilə
+            {t('common.refresh', {}, 'Yenilə')}
           </button>
 
           <button
@@ -333,7 +342,7 @@ export const TenantDetailPage: React.FC = () => {
             <span className="material-symbols-outlined text-[16px]">
               {isActive ? 'block' : 'check_circle'}
             </span>
-            {isActive ? 'Müştərini Dondur' : 'Aktivləşdir'}
+            {isActive ? t('tenants.suspendTenant', {}, 'Müştərini Dondur') : t('tenants.activateTenant', {}, 'Aktivləşdir')}
           </button>
         </div>
       </div>
@@ -365,34 +374,34 @@ export const TenantDetailPage: React.FC = () => {
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                {statusLabel}
+                {localizedStatus}
               </span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
               <div>
                 <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
-                  Tenant Slug
+                  {t('tenants.tenantSlug', {}, 'Tenant Slug')}
                 </span>
                 <span className="font-mono text-xs font-bold text-[#D946EF]">{tenant.slug}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
-                  Custom Domain
+                  {t('tenants.customDomain', {}, 'Custom Domain')}
                 </span>
-                <span className="text-xs text-white">{tenant.domain || 'Təyin olunmayıb'}</span>
+                <span className="text-xs text-white">{tenant.domain || '-'}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
-                  Active Users
+                  {t('common.usersCount', {}, 'Active Users')}
                 </span>
                 <span className="font-mono text-xs font-bold text-white">
-                  {totalUsersCount.toLocaleString()} user
+                  {totalUsersCount.toLocaleString()} {t('common.user', {}, 'user')}
                 </span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
-                  Created Date
+                  {t('common.createdAt', {}, 'Created Date')}
                 </span>
                 <span className="text-xs text-[#71717A]">{formatDate(tenant.createdAt)}</span>
               </div>
@@ -404,10 +413,10 @@ export const TenantDetailPage: React.FC = () => {
             <div className="p-5 border-b border-[#27272A] flex justify-between items-center bg-[#141416]">
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  Subscribed Enterprise Modules ({subscriptionsList.length})
+                  {t('tenants.activeModules', {}, 'Subscribed Enterprise Modules')} ({subscriptionsList.length})
                 </h3>
                 <p className="text-xs text-[#71717A] mt-0.5">
-                  Bu şirkətin istifadə hüququ olan mikroservislər və abunəlik statusları
+                  {t('common.manageSubscription', {}, 'Bu şirkətin istifadə hüququ olan mikroservislər və abunəlik statusları')}
                 </p>
               </div>
               <button
@@ -415,7 +424,7 @@ export const TenantDetailPage: React.FC = () => {
                 className="btn-primary h-8 px-3 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                Modul Əlavə Et
+                {t('common.create', {}, 'Modul Əlavə Et')}
               </button>
             </div>
 
@@ -423,12 +432,12 @@ export const TenantDetailPage: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#141416] border-b border-[#27272A] text-[11px] text-[#71717A] uppercase tracking-wider font-semibold">
-                    <th className="py-2.5 px-4">Module Name</th>
+                    <th className="py-2.5 px-4">{t('common.name', {}, 'Module Name')}</th>
                     <th className="py-2.5 px-4">Code</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4">Start Date</th>
+                    <th className="py-2.5 px-4">{t('common.status', {}, 'Status')}</th>
+                    <th className="py-2.5 px-4">{t('common.createdAt', {}, 'Start Date')}</th>
                     <th className="py-2.5 px-4">Expiry</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
+                    <th className="py-2.5 px-4 text-right">{t('common.actions', {}, 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#27272A]/60 text-xs">
@@ -455,12 +464,12 @@ export const TenantDetailPage: React.FC = () => {
                               }`}
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                              {isModSuspended ? 'Suspended' : 'Active'}
+                              {isModSuspended ? t('common.suspended', {}, 'Suspended') : t('common.active', {}, 'Active')}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-[#71717A] text-xs">{formatDate(m.startsAt)}</td>
                           <td className="py-3 px-4 text-[#71717A] text-xs">
-                            {m.expiresAt ? formatDate(m.expiresAt) : 'Müddətsiz (Perpetual)'}
+                            {m.expiresAt ? formatDate(m.expiresAt) : 'Perpetual'}
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
@@ -471,7 +480,7 @@ export const TenantDetailPage: React.FC = () => {
                                 className={`p-1 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer ${
                                   isModSuspended ? 'text-emerald-400' : 'text-amber-400'
                                 }`}
-                                title={isModSuspended ? 'Modulu aç' : 'Modulu dondur'}
+                                title="Delete"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
                                   {isModSuspended ? 'play_circle' : 'pause_circle'}
@@ -480,7 +489,7 @@ export const TenantDetailPage: React.FC = () => {
                               <button
                                 onClick={() => openRemoveModuleModal(m.moduleId, m.moduleName || m.moduleCode)}
                                 className="p-1 text-[#71717A] hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                                title="Abunəliyi sil"
+                                title="Delete"
                               >
                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                               </button>
@@ -492,7 +501,7 @@ export const TenantDetailPage: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-[#71717A] text-xs">
-                        Bu təşkilata hələ heç bir modul təyin edilməyib.
+                        {t('common.none', {}, 'Bu təşkilata hələ heç bir modul təyin edilməyib.')}
                       </td>
                     </tr>
                   )}
@@ -507,27 +516,17 @@ export const TenantDetailPage: React.FC = () => {
           <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-5 shadow-lg shadow-black/20 space-y-4">
             <h4 className="text-xs font-bold text-white border-b border-[#27272A] pb-2 flex items-center gap-2">
               <span className="material-symbols-outlined text-[#D946EF] text-base">security</span>
-              Security &amp; Policy Scope
+              {t('security.title', {}, 'Security & Policy Scope')}
             </h4>
 
             <div className="space-y-3 text-xs">
               <div className="flex justify-between items-center py-1">
-                <span className="text-[#71717A]">Signature Algorithm:</span>
+                <span className="text-[#71717A]">{t('security.algorithm', {}, 'Signature Algorithm')}:</span>
                 <span className="font-mono font-bold text-[#D946EF]">RS256</span>
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-[#71717A]">Isolation Model:</span>
-                <span className="bg-[#121214] px-2 py-0.5 rounded font-mono text-[#A1A1AA]">TenantId Schema</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-[#71717A]">Token Lifetime:</span>
+                <span className="text-[#71717A]">{t('security.tokenExpiry', {}, 'Token Lifetime')}:</span>
                 <span className="font-medium text-white">60 min (Access)</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-[#71717A]">Refresh Rotation:</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">check_circle</span> Enabled
-                </span>
               </div>
             </div>
           </div>
@@ -535,21 +534,21 @@ export const TenantDetailPage: React.FC = () => {
           <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-5 shadow-lg shadow-black/20 space-y-3">
             <h4 className="text-xs font-bold text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-[#D946EF] text-base">admin_panel_settings</span>
-              Identity Actions
+              {t('common.actions', {}, 'Identity Actions')}
             </h4>
             <div className="space-y-2 pt-1">
               <button
                 onClick={() => navigate('/users')}
                 className="w-full py-2 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] text-white rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
-                <span>İstifadəçiləri İdarə Et</span>
+                <span>{t('users.title', {}, 'İstifadəçiləri İdarə Et')}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
               <button
                 onClick={() => navigate('/roles')}
                 className="w-full py-2 px-3 bg-[#121214] hover:bg-[#27272A] border border-[#27272A] text-white rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
-                <span>Rollar və İcazələr</span>
+                <span>{t('roles.title', {}, 'Rollar və İcazələr')}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
@@ -559,16 +558,16 @@ export const TenantDetailPage: React.FC = () => {
 
       {/* Add Module Modal */}
       {isAddModuleOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#D946EF]/20 text-[#D946EF] flex items-center justify-center">
                   <span className="material-symbols-outlined text-lg">extension</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Modul Abunəliyi Əlavə Et</h3>
-                  <p className="text-xs text-[#71717A]">{tenant.name} üçün yeni modul təyin edin</p>
+                  <h3 className="text-sm font-bold text-white">{t('common.create', {}, 'Modul Abunəliyi Əlavə Et')}</h3>
+                  <p className="text-xs text-[#71717A]">{tenant.name} - {t('tenants.activeModules', {}, 'yeni modul')}</p>
                 </div>
               </div>
               <button onClick={() => setIsAddModuleOpen(false)} className="text-[#71717A] hover:text-white p-1">
@@ -578,7 +577,7 @@ export const TenantDetailPage: React.FC = () => {
 
             <form onSubmit={handleAddModule} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Əlavə Ediləcək Modul *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('tenants.activeModules', {}, 'Əlavə Ediləcək Modul')} *</label>
                 <select
                   value={selectedModuleId}
                   onChange={(e) => setSelectedModuleId(e.target.value)}

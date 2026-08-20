@@ -12,7 +12,55 @@
 }
 
 /* =========================================================
-   LIGHT MODE (Altensor CRM 1:1 Light Theme)
+   DEFAULT / DARK THEME FORM CONTROLS & CRM INPUT
+   ========================================================= */
+.crm-input {
+  background-color: #121214 !important;
+  border: 1px solid #27272A !important;
+  color: #FFFFFF !important;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.crm-input:focus {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+.crm-input::placeholder {
+  color: #71717A !important;
+}
+
+select.crm-input option {
+  background-color: #18181B;
+  color: #FFFFFF;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+select,
+textarea {
+  background-color: #121214;
+  border: 1px solid #27272A;
+  color: #FFFFFF;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #71717A;
+}
+
+/* =========================================================
+   LIGHT MODE (Altensor Suite Clean Light Theme)
    ========================================================= */
 html.light body,
 html.light main {
@@ -20,8 +68,20 @@ html.light main {
   color: #0F172A !important;
 }
 
+/* Headings in Light Mode */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0F172A !important;
+}
+
 /* Background overrides in Light Mode */
-html.light .bg-\[\#121214\] {
+html.light .bg-\[\#121214\],
+html.light .bg-\[\#08090C\],
+html.light .bg-\[\#0C0E14\] {
   background-color: #F8FAFC !important;
 }
 
@@ -46,10 +106,13 @@ html.light .bg-\[\#2A2F3D\] {
 }
 
 /* Universal Borders & Dividers in Light Mode */
-html.light [class*="border"],
-html.light [class*="divide-"] > *,
-html.light .divide-y > :not([hidden]) ~ :not([hidden]),
-html.light .divide-x > :not([hidden]) ~ :not([hidden]),
+html.light [class*="border-white\/"],
+html.light [class*="border-\[\#27272A\]"],
+html.light [class*="border-\[\#2C2C2E\]"],
+html.light [class*="border-\[\#3F3F46\]"] {
+  border-color: #E2E8F0 !important;
+}
+
 html.light table,
 html.light thead,
 html.light tbody,
@@ -61,20 +124,33 @@ html.light hr {
 }
 
 /* Text in Light Mode */
-html.light .text-white,
+html.light .text-white:not(.btn-primary):not(.btn-primary *):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-indigo-"]):not([class*="bg-fuchsia-"]):not([class*="bg-sky-"]),
 html.light .text-\[\#F4F4F5\],
 html.light .text-\[\#D4D4D8\],
-html.light .text-slate-300,
-html.light .text-\[\#E4E4E7\] {
+html.light .text-\[\#E4E4E7\],
+html.light .text-slate-200,
+html.light .text-slate-300 {
   color: #0F172A !important;
 }
 
-html.light .text-\[\#A1A1AA\] {
+html.light .text-\[\#A1A1AA\],
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-\[\#71717A\],
+html.light .text-slate-500 {
   color: #64748B !important;
 }
 
-html.light .text-\[\#71717A\] {
-  color: #94A3B8 !important;
+html.light th {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+html.light label {
+  color: #334155 !important;
+  font-weight: 600 !important;
 }
 
 /* Inputs & Form Controls in Light Mode */
@@ -82,7 +158,7 @@ html.light input:not([type="checkbox"]):not([type="radio"]),
 html.light select,
 html.light textarea,
 html.light .crm-input {
-  background-color: #FFFFFF !important;
+  background-color: #F8FAFC !important;
   border-color: #CBD5E1 !important;
   color: #0F172A !important;
 }
@@ -113,7 +189,7 @@ html.light tr:hover {
 }
 
 /* =========================================================
-   MIDNIGHT BLUE (Altensor CRM 1:1 Midnight Blue Theme)
+   MIDNIGHT BLUE (Altensor Suite 1:1 Midnight Blue Theme)
    ========================================================= */
 html.theme-midnight body,
 html.theme-midnight main {
@@ -122,8 +198,13 @@ html.theme-midnight main {
 }
 
 /* Background overrides in Midnight Mode */
-html.theme-midnight .bg-\[\#121214\] {
+html.theme-midnight .bg-\[\#121214\],
+html.theme-midnight .bg-\[\#08090C\] {
   background-color: #0B0F19 !important;
+}
+
+html.theme-midnight .bg-\[\#0C0E14\] {
+  background-color: #0E1526 !important;
 }
 
 html.theme-midnight .bg-\[\#18181B\],
@@ -146,10 +227,13 @@ html.theme-midnight .bg-\[\#2A2F3D\] {
 }
 
 /* Universal Borders in Midnight Mode */
-html.theme-midnight [class*="border"],
-html.theme-midnight [class*="divide-"] > *,
-html.theme-midnight .divide-y > :not([hidden]) ~ :not([hidden]),
-html.theme-midnight .divide-x > :not([hidden]) ~ :not([hidden]),
+html.theme-midnight [class*="border-white\/"],
+html.theme-midnight [class*="border-\[\#27272A\]"],
+html.theme-midnight [class*="border-\[\#2C2C2E\]"],
+html.theme-midnight [class*="border-\[\#3F3F46\]"] {
+  border-color: #1E293B !important;
+}
+
 html.theme-midnight table,
 html.theme-midnight thead,
 html.theme-midnight tbody,
@@ -161,10 +245,8 @@ html.theme-midnight hr {
 }
 
 /* Text in Midnight Mode */
-html.theme-midnight .text-white,
 html.theme-midnight .text-\[\#F4F4F5\],
 html.theme-midnight .text-\[\#D4D4D8\],
-html.theme-midnight .text-slate-300,
 html.theme-midnight .text-\[\#E4E4E7\] {
   color: #FFFFFF !important;
 }
@@ -213,17 +295,20 @@ html.theme-midnight tr:hover {
 /* =========================================================
    PRESERVE STATUS PILLS & BADGES
    ========================================================= */
-.text-emerald-400, .text-emerald-500 {
+.text-emerald-400, .text-emerald-500, .text-emerald-600 {
   color: #10B981 !important;
 }
-.text-amber-400, .text-amber-500 {
+.text-amber-400, .text-amber-500, .text-amber-600 {
   color: #F59E0B !important;
 }
-.text-rose-400, .text-rose-500 {
+.text-rose-400, .text-rose-500, .text-red-500, .text-red-600 {
   color: #EF4444 !important;
 }
-.text-sky-400, .text-sky-500 {
-  color: #38BDF8 !important;
+.text-sky-400, .text-sky-500, .text-sky-600 {
+  color: #0284C7 !important;
+}
+.text-fuchsia-400, .text-fuchsia-500, .text-\[\#D946EF\] {
+  color: #D946EF !important;
 }
 
 /* =========================================================
@@ -259,9 +344,9 @@ html.theme-midnight ::-webkit-scrollbar-thumb:hover {
 }
 
 /* =========================================================
-   ALTENSOR CRM 1:1 PRIMARY & SECONDARY BUTTON STYLES
+   PRIMARY & SECONDARY BUTTON STYLES
    ========================================================= */
-/* Dark / Midnight Mode: Pure White Button with Black Text (CRM Standard) */
+/* Dark / Midnight Mode: Pure White Button with Black Text */
 .btn-primary {
   background-color: #FFFFFF !important;
   color: #000000 !important;
@@ -341,7 +426,7 @@ html.theme-midnight .tab-pill-active {
 .blob-atmosphere {
   position: absolute;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(217, 70, 239, 0.15) 0%, rgba(217, 70, 239, 0) 70%);
   filter: blur(40px);
   pointer-events: none;
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,14 +13,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const { user, decodedToken, isSuperAdmin, expiresInSeconds, logoutAll } = useAuth();
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
+  const { t, language, setLanguage } = useLanguage();
 
   const [activeMenu, setActiveMenu] = useState<'profile' | 'preferences' | 'security'>('preferences');
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('az');
   const [selectedTimezone, setSelectedTimezone] = useState<string>('Asia/Baku');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -39,11 +41,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      showToast('warning', 'Yeni şifrə ən azı 6 simvol olmalıdır', 'Xəbərdarlıq');
-      return;
-    }
-    showToast('success', 'Şifrə uğurla dəyişdirildi!', 'Uğurlu');
+    showToast('success', t('settings.saveSuccess', {}, 'Şifrəniz uğurla yeniləndi!'), 'Success');
     setIsChangingPassword(false);
     setOldPassword('');
     setNewPassword('');
@@ -74,12 +72,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const cardOuterBg = isLight ? 'bg-[#F1F5F9]' : isMidnight ? 'bg-[#0E1526]' : 'bg-[#161619]';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div
         className={`${modalBg} ${borderColor} border rounded-2xl shadow-2xl w-full max-w-4xl h-[560px] max-h-[90vh] overflow-hidden flex animate-in zoom-in-95 duration-150 relative select-none transition-colors duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Right Close Button */}
         <button
           onClick={onClose}
           className={`absolute top-5 right-5 ${textSub} hover:${textTitle} p-1 rounded-lg hover:bg-white/[0.06] transition-colors z-20 cursor-pointer`}
@@ -87,13 +84,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
-        {/* 1. LEFT SETTINGS SIDEBAR */}
         <aside className={`w-60 ${sidebarBg} ${borderColor} border-r p-4 flex flex-col justify-between overflow-y-auto shrink-0 transition-colors duration-200`}>
           <div className="space-y-6 text-[11px]">
-            {/* Group 1: İSTİFADƏÇİ KONFİQURASİYASI */}
             <div>
               <span className={`text-[10px] font-bold ${textSub} uppercase tracking-wider px-2 block mb-1.5`}>
-                İstifadəçi Konfiqurasiyası
+                {t('settings.general', {}, 'İstifadəçi Konfiqurasiyası')}
               </span>
               <div className="space-y-1">
                 <button
@@ -107,7 +102,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   <div className="w-4 h-4 rounded-full bg-white/10 text-current flex items-center justify-center text-[10px] font-bold shrink-0">
                     {avatarInitial}
                   </div>
-                  <span>Profil</span>
+                  <span>{t('users.title', {}, 'Profil')}</span>
                 </button>
 
                 <button
@@ -119,15 +114,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   }`}
                 >
                   <span className="material-symbols-outlined text-[17px]">tune</span>
-                  <span>Tərcihlər</span>
+                  <span>{t('settings.preferences', {}, 'Tərcihlər')}</span>
                 </button>
               </div>
             </div>
 
-            {/* Group 2: TƏHLÜKƏSİZLİK VƏ SESSİYA */}
             <div>
               <span className={`text-[10px] font-bold ${textSub} uppercase tracking-wider px-2 block mb-1.5`}>
-                Təhlükəsizlik &amp; Giriş
+                {t('settings.security', {}, 'Təhlükəsizlik & Giriş')}
               </span>
               <div className="space-y-1">
                 <button
@@ -139,27 +133,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   }`}
                 >
                   <span className="material-symbols-outlined text-[17px]">security</span>
-                  <span>Sessiyalar &amp; Token</span>
+                  <span>{t('security.title', {}, 'Sessiyalar & Token')}</span>
                 </button>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* 2. RIGHT MAIN SETTINGS CONTENT */}
         <main className="flex-1 p-8 overflow-y-auto custom-scrollbar">
-          {/* TAB 1: PROFİL */}
           {activeMenu === 'profile' && (
             <div className="max-w-xl space-y-7 animate-in fade-in duration-150">
-              {/* Header */}
               <div>
-                <h2 className={`text-xl font-bold ${textTitle} tracking-tight`}>Profil</h2>
+                <h2 className={`text-xl font-bold ${textTitle} tracking-tight`}>{t('users.title', {}, 'Profil')}</h2>
                 <p className={`text-xs ${textSub} mt-1`}>
-                  Profil və giriş məlumatlarınızı idarə edin.
+                  {t('users.subtitle', {}, 'Profil və giriş məlumatlarınızı idarə edin.')}
                 </p>
               </div>
 
-              {/* Avatar & User Info */}
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-slate-800 text-[#D946EF] font-bold text-xl flex items-center justify-center border border-[#3A3A42] shrink-0 shadow-md">
                   {avatarInitial}
@@ -167,61 +157,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className={`text-base font-bold ${textTitle}`}>{displayName}</span>
-                    <button
-                      onClick={() => showToast('info', 'Profil redaktəsi üçün adminlə əlaqə saxlayın', 'Məlumat')}
-                      className={`${textSub} hover:${textTitle} transition-colors`}
-                      title="Redaktə et"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">edit</span>
-                    </button>
                   </div>
                   <span className={`text-xs ${textSub} block font-mono`}>{email}</span>
                 </div>
               </div>
 
-              {/* Section: Hesab Məlumatları & Təhlükəsizlik */}
               <div className="space-y-4 pt-1">
                 <h3 className={`text-xs font-bold ${textTitle} uppercase tracking-wider`}>
-                  Hesab Məlumatları &amp; Təhlükəsizlik
+                  {t('settings.accountSecurity', {}, 'Hesab Məlumatları & Təhlükəsizlik')}
                 </h3>
 
-                {/* Row 1: E-poçtlar & İmza */}
                 <div className={`flex items-center justify-between py-3 border-b ${borderColor}`}>
                   <div>
-                    <span className={`text-xs font-bold ${textTitle} block`}>E-poçtlar &amp; İmza</span>
+                    <span className={`text-xs font-bold ${textTitle} block`}>{t('settings.emailSignature', {}, 'E-poçtlar & İmza')}</span>
                     <span className={`text-xs ${textSub} mt-0.5 block`}>
-                      Yazışmalar üçün e-poçt imzanızı tənzimləyin.
+                      {t('settings.emailSignatureDesc', {}, 'Yazışmalar üçün e-poçt imzanızı tənzimləyin.')}
                     </span>
                   </div>
                   <button
                     onClick={() => showToast('info', 'E-poçt imzanız avtomatik autentifikasiya olunur', 'E-poçt')}
                     className="px-4 py-1.5 btn-secondary text-xs font-semibold rounded-xl cursor-pointer"
                   >
-                    Quraşdır
+                    {t('settings.configure', {}, 'Quraşdır')}
                   </button>
                 </div>
 
-                {/* Row 2: Şifrə */}
                 <div className={`flex items-center justify-between py-3 border-b ${borderColor}`}>
                   <div>
-                    <span className={`text-xs font-bold ${textTitle} block`}>Şifrə</span>
+                    <span className={`text-xs font-bold ${textTitle} block`}>{t('settings.password', {}, 'Şifrə')}</span>
                     <span className={`text-xs ${textSub} mt-0.5 block`}>
-                      Təhlükəsizlik üçün hesabınızın şifrəsini dəyişin.
+                      {t('settings.passwordDesc', {}, 'Təhlükəsizlik üçün hesabınızın şifrəsini dəyişin.')}
                     </span>
                   </div>
                   <button
                     onClick={() => setIsChangingPassword(!isChangingPassword)}
                     className="px-4 py-1.5 btn-secondary text-xs font-semibold rounded-xl cursor-pointer"
                   >
-                    Şifrəni Dəyiş
+                    {t('settings.changePassword', {}, 'Şifrəni Dəyiş')}
                   </button>
                 </div>
 
-                {/* Change Password Form (if expanded) */}
                 {isChangingPassword && (
                   <form onSubmit={handlePasswordSubmit} className={`p-4 ${cardOuterBg} ${borderColor} border rounded-xl space-y-3 animate-in fade-in`}>
                     <div>
-                      <label className={`block text-xs font-semibold ${textTitle} mb-1`}>Cari Şifrə</label>
+                      <label className={`block text-xs font-semibold ${textTitle} mb-1`}>{t('settings.currentPassword', {}, 'Cari Şifrə')}</label>
                       <input
                         type="password"
                         required
@@ -232,7 +211,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       />
                     </div>
                     <div>
-                      <label className={`block text-xs font-semibold ${textTitle} mb-1`}>Yeni Şifrə</label>
+                      <label className={`block text-xs font-semibold ${textTitle} mb-1`}>{t('settings.newPassword', {}, 'Yeni Şifrə')}</label>
                       <input
                         type="password"
                         required
@@ -248,54 +227,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         onClick={() => setIsChangingPassword(false)}
                         className="px-3 py-1.5 text-xs btn-secondary rounded-lg"
                       >
-                        Ləğv et
+                        {t('common.cancel', {}, 'Ləğv et')}
                       </button>
                       <button type="submit" className="px-3 py-1.5 text-xs btn-primary rounded-lg">
-                        Saxla
+                        {t('common.save', {}, 'Saxla')}
                       </button>
                     </div>
                   </form>
                 )}
 
-                {/* Row 3: Tenant & Role Info */}
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <span className={`text-xs font-bold ${textTitle} block`}>Təşkilat və Rol</span>
+                    <span className={`text-xs font-bold ${textTitle} block`}>{t('settings.organizationAndRole', {}, 'Təşkilat və Rol')}</span>
                     <span className={`text-xs ${textSub} mt-0.5 block`}>
-                      @{tenantSlug} təşkilatında <span className="text-[#D946EF] font-semibold">{roleName}</span> rolu
+                      @{tenantSlug} {t('settings.organizationAndRoleDesc', {}, 'təşkilatında')} <span className="text-[#D946EF] font-semibold">{roleName}</span>
                     </span>
                   </div>
                   <span className="px-2.5 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold rounded-full">
-                    Aktiv
+                    {t('common.active', {}, 'Aktiv')}
                   </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: TƏRCİHLƏR */}
           {activeMenu === 'preferences' && (
             <div className="max-w-xl space-y-7 animate-in fade-in duration-150">
-              {/* Header */}
               <div>
-                <h2 className={`text-xl font-bold ${textTitle} tracking-tight`}>Tərcihlər</h2>
+                <h2 className={`text-xl font-bold ${textTitle} tracking-tight`}>{t('settings.preferences', {}, 'Tərcihlər')}</h2>
                 <p className={`text-xs ${textSub} mt-1`}>
-                  Tətbiqdən istifadə tərzinizi tənzimləyin.
+                  {t('settings.preferencesSubtitle', {}, 'Tətbiqdən istifadə tərzinizi tənzimləyin.')}
                 </p>
               </div>
 
-              {/* Section 1: Görünüş & Tema */}
               <div className="space-y-3.5">
                 <div>
-                  <h3 className={`text-xs font-bold ${textTitle} block`}>Görünüş &amp; Tema</h3>
+                  <h3 className={`text-xs font-bold ${textTitle} block`}>{t('settings.themeTitle', {}, 'Görünüş & Tema')}</h3>
                   <span className={`text-xs ${textSub} mt-0.5 block`}>
-                    Açıq, qaranlıq və gecə mavisi temaları arasında keçid edin
+                    {t('settings.themeSubtitle', {}, 'Açıq, qaranlıq və gecə mavisi temaları arasında keçid edin')}
                   </span>
                 </div>
 
-                {/* 3 THEME CARDS (Altensor CRM 1:1 Isolated Theme Previews) */}
                 <div className="grid grid-cols-3 gap-3 pt-1">
-                  {/* Theme 1: Açıq (Light) */}
                   <div
                     onClick={() => setTheme('light')}
                     className={`rounded-2xl border transition-all cursor-pointer p-3 flex flex-col justify-between ${
@@ -304,39 +277,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         : `${cardOuterBg} ${borderColor} hover:border-[#CBD5E1] dark:hover:border-[#40404C]`
                     }`}
                   >
-                    {/* Fixed Isolated Mini Window Preview */}
-                    <div
-                      style={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0' }}
-                      className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm"
-                    >
-                      <div className="flex items-center gap-1">
-                        <div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div style={{ backgroundColor: '#D946EF' }} className="w-3.5 h-3.5 rounded flex items-center justify-center shadow-xs">
-                          <span style={{ color: '#FFFFFF' }} className="text-[7px] font-bold">▼</span>
-                        </div>
-                        <span style={{ color: '#0F172A' }} className="text-[10px] font-bold leading-none">AUTH</span>
-                      </div>
+                    <div style={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0' }} className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm">
+                      <div className="flex items-center gap-1"><div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div></div>
                     </div>
-
                     <div className="flex items-center justify-between px-0.5">
                       <span className={`text-xs font-medium ${theme === 'light' ? 'font-bold text-[#D946EF]' : textTitle}`}>
-                        Açıq (Light)
+                        {t('settings.lightTheme', {}, 'Açıq (Light)')}
                       </span>
-                      <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                          theme === 'light' ? 'border-[#D946EF] bg-[#D946EF]' : 'border-[#94A3B8] dark:border-[#4A4A56]'
-                        }`}
-                      >
-                        {theme === 'light' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                      </div>
                     </div>
                   </div>
 
-                  {/* Theme 2: Qaranlıq (Dark) */}
                   <div
                     onClick={() => setTheme('dark')}
                     className={`rounded-2xl border transition-all cursor-pointer p-3 flex flex-col justify-between ${
@@ -345,39 +295,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         : `${cardOuterBg} ${borderColor} hover:border-[#CBD5E1] dark:hover:border-[#40404C]`
                     }`}
                   >
-                    {/* Fixed Isolated Mini Window Preview */}
-                    <div
-                      style={{ backgroundColor: '#18181B', borderColor: '#27272A' }}
-                      className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm"
-                    >
-                      <div className="flex items-center gap-1">
-                        <div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div style={{ backgroundColor: '#D946EF' }} className="w-3.5 h-3.5 rounded flex items-center justify-center shadow-xs">
-                          <span style={{ color: '#FFFFFF' }} className="text-[7px] font-bold">▼</span>
-                        </div>
-                        <span style={{ color: '#FFFFFF' }} className="text-[10px] font-bold leading-none">AUTH</span>
-                      </div>
+                    <div style={{ backgroundColor: '#18181B', borderColor: '#27272A' }} className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm">
+                      <div className="flex items-center gap-1"><div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div></div>
                     </div>
-
                     <div className="flex items-center justify-between px-0.5">
                       <span className={`text-xs font-medium ${theme === 'dark' ? 'font-bold text-[#D946EF]' : textTitle}`}>
-                        Qaranlıq (Dark)
+                        {t('settings.darkTheme', {}, 'Qaranlıq (Dark)')}
                       </span>
-                      <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                          theme === 'dark' ? 'border-[#D946EF] bg-[#D946EF]' : 'border-[#94A3B8] dark:border-[#4A4A56]'
-                        }`}
-                      >
-                        {theme === 'dark' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                      </div>
                     </div>
                   </div>
 
-                  {/* Theme 3: Gecə Mavisi (Midnight Blue) */}
                   <div
                     onClick={() => setTheme('midnight')}
                     className={`rounded-2xl border transition-all cursor-pointer p-3 flex flex-col justify-between ${
@@ -386,83 +313,100 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         : `${cardOuterBg} ${borderColor} hover:border-[#CBD5E1] dark:hover:border-[#334155]`
                     }`}
                   >
-                    {/* Fixed Isolated Mini Window Preview */}
-                    <div
-                      style={{ backgroundColor: '#0B0F19', borderColor: '#1E293B' }}
-                      className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm"
-                    >
-                      <div className="flex items-center gap-1">
-                        <div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div>
-                        <div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div style={{ backgroundColor: '#D946EF' }} className="w-3.5 h-3.5 rounded flex items-center justify-center shadow-xs">
-                          <span style={{ color: '#FFFFFF' }} className="text-[7px] font-bold">▼</span>
-                        </div>
-                        <span style={{ color: '#FFFFFF' }} className="text-[10px] font-bold leading-none">AUTH</span>
-                      </div>
+                    <div style={{ backgroundColor: '#0B0F19', borderColor: '#1E293B' }} className="w-full h-18 rounded-xl border p-2 flex flex-col justify-between mb-2.5 shadow-sm">
+                      <div className="flex items-center gap-1"><div style={{ backgroundColor: '#EF4444' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#F59E0B' }} className="w-1.5 h-1.5 rounded-full"></div><div style={{ backgroundColor: '#10B981' }} className="w-1.5 h-1.5 rounded-full"></div></div>
                     </div>
-
                     <div className="flex items-center justify-between px-0.5">
                       <span className={`text-xs font-medium ${theme === 'midnight' ? 'font-bold text-[#D946EF]' : textTitle}`}>
-                        Gecə Mavisi (Midnight Blue)
+                        {t('settings.midnightTheme', {}, 'Gecə Mavisi (Midnight Blue)')}
                       </span>
-                      <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                          theme === 'midnight' ? 'border-[#D946EF] bg-[#D946EF]' : 'border-[#94A3B8] dark:border-[#4A4A56]'
-                        }`}
-                      >
-                        {theme === 'midnight' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Section 2: Dil və Saat Qurşağı */}
               <div className={`space-y-4 pt-3 border-t ${borderColor}`}>
                 <h3 className={`text-xs font-bold ${textTitle} uppercase tracking-wider`}>
-                  Dil və Saat Qurşağı
+                  {t('settings.language', {}, 'Dil və Saat Qurşağı')}
                 </h3>
 
-                {/* Row 1: İnterfeys Dili */}
                 <div className="flex items-center justify-between py-1.5">
                   <div>
-                    <span className={`text-xs font-bold ${textTitle} block`}>İnterfeys Dili</span>
+                    <span className={`text-xs font-bold ${textTitle} block`}>{t('settings.languageTitle', {}, 'İnterfeys Dili')}</span>
                     <span className={`text-xs ${textSub} mt-0.5 block`}>
-                      Tətbiqin göstərilmə dilini seçin.
+                      {t('settings.languageSubtitle', {}, 'Tətbiqin göstərilmə dilini seçin.')}
                     </span>
                   </div>
-                  <div className="relative w-56">
-                    <select
-                      value={selectedLanguage}
-                      onChange={(e) => setSelectedLanguage(e.target.value)}
-                      className={`w-full ${inputBg} border rounded-xl px-3 py-2 text-xs outline-none cursor-pointer appearance-none pr-8 transition-colors`}
+                  <div className="relative w-64">
+                    <button
+                      type="button"
+                      onClick={() => setIsLangOpen(!isLangOpen)}
+                      className={`w-full ${inputBg} border rounded-xl px-3.5 py-2 text-xs flex items-center justify-between cursor-pointer transition-all hover:border-[#D946EF]/60 shadow-xs`}
                     >
-                      <option value="az">az Azərbaycan dili (Default)</option>
-                      <option value="en">en English (US)</option>
-                      <option value="ru">ru Русский</option>
-                    </select>
-                    <span className={`material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 ${textSub} text-sm pointer-events-none`}>
-                      expand_more
-                    </span>
+                      <div className="flex items-center gap-2 font-medium">
+                        <span className="text-base leading-none">
+                          {language === 'az' ? '🇦🇿' : language === 'en' ? '🇬🇧' : '🇷🇺'}
+                        </span>
+                        <span>
+                          {language === 'az'
+                            ? 'Azərbaycan dili (AZ)'
+                            : language === 'en'
+                            ? 'English (EN)'
+                            : 'Русский (RU)'}
+                        </span>
+                      </div>
+                      <span className={`material-symbols-outlined ${textSub} text-sm transition-transform duration-200 ${isLangOpen ? 'rotate-180 text-[#D946EF]' : ''}`}>
+                        expand_more
+                      </span>
+                    </button>
+
+                    {isLangOpen && (
+                      <div className={`absolute top-full left-0 right-0 mt-1.5 p-1.5 ${cardOuterBg} ${borderColor} border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 space-y-0.5`}>
+                        {[
+                          { code: 'az', name: 'Azərbaycan dili (AZ)', flag: '🇦🇿' },
+                          { code: 'en', name: 'English (EN)', flag: '🇬🇧' },
+                          { code: 'ru', name: 'Русский (RU)', flag: '🇷🇺' }
+                        ].map((item) => (
+                          <button
+                            key={item.code}
+                            type="button"
+                            onClick={() => {
+                              setLanguage(item.code as any);
+                              setIsLangOpen(false);
+                              showToast('success', t('settings.saveSuccess', {}, 'Dil tənzimləməsi yadda saxlanıldı!'), 'Success');
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                              language === item.code
+                                ? 'bg-[#D946EF]/15 text-[#D946EF] font-bold border border-[#D946EF]/30'
+                                : `${textTitle} hover:bg-white/[0.06]`
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base leading-none">{item.flag}</span>
+                              <span>{item.name}</span>
+                            </div>
+                            {language === item.code && (
+                              <span className="material-symbols-outlined text-sm text-[#D946EF]">check</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Row 2: Saat Qurşağı */}
                 <div className="flex items-center justify-between py-1.5">
                   <div>
-                    <span className={`text-xs font-bold ${textTitle} block`}>Saat Qurşağı</span>
+                    <span className={`text-xs font-bold ${textTitle} block`}>{t('settings.timezone', {}, 'Saat Qurşağı')}</span>
                     <span className={`text-xs ${textSub} mt-0.5 block`}>
-                      Tətbiq üçün saat qurşağını dəyişin.
+                      {t('settings.timezoneDesc', {}, 'Tətbiq üçün saat qurşağını dəyişin.')}
                     </span>
                   </div>
-                  <div className="relative w-56">
+                  <div className="relative w-64">
                     <select
                       value={selectedTimezone}
                       onChange={(e) => setSelectedTimezone(e.target.value)}
-                      className={`w-full ${inputBg} border rounded-xl px-3 py-2 text-xs outline-none cursor-pointer appearance-none pr-8 transition-colors`}
+                      className={`w-full ${inputBg} border rounded-xl px-3.5 py-2 text-xs outline-none cursor-pointer appearance-none pr-8 transition-colors`}
                     >
                       <option value="Asia/Baku">Asia/Baku (GMT+4)</option>
                       <option value="UTC">UTC (GMT+0)</option>
@@ -478,7 +422,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           )}
 
-          {/* TAB 3: TƏHLÜKƏSİZLİK & SESSİYA */}
           {activeMenu === 'security' && (
             <div className="max-w-xl space-y-7 animate-in fade-in duration-150">
               <div>

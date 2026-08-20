@@ -3,10 +3,12 @@ import { tenantApi } from '../api/tenantApi';
 import { UserResponse } from '../types/user.types';
 import { RoleResponse } from '../types/role.types';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { formatDate } from '../utils/formatters';
 
 export const UsersPage: React.FC = () => {
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [roles, setRoles] = useState<RoleResponse[]>([]);
@@ -33,7 +35,7 @@ export const UsersPage: React.FC = () => {
       setUsers(usersData);
       setRoles(rolesData);
     } catch (err: any) {
-      showToast('error', err.message || 'İstifadəçilər yüklənərkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error loading users', 'Error');
     } finally {
       setLoading(false);
     }
@@ -46,7 +48,7 @@ export const UsersPage: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFullName || !newEmail || !newPassword) {
-      showToast('warning', 'Bütün məcburi sahələri doldurun', 'Xəbərdarlıq');
+      showToast('warning', t('common.required', {}, 'Bütün məcburi sahələri doldurun'), 'Warning');
       return;
     }
     setCreating(true);
@@ -57,14 +59,14 @@ export const UsersPage: React.FC = () => {
         password: newPassword,
         roleIds: selectedRoleIds
       });
-      showToast('success', `${newFullName} istifadəçisi uğurla yaradıldı!`, 'Uğurlu');
+      showToast('success', t('users.userCreated', {}, 'İstifadəçi uğurla yaradıldı!'), 'Success');
       setIsCreateOpen(false);
       setNewFullName('');
       setNewEmail('');
       setSelectedRoleIds([]);
       loadData();
     } catch (err: any) {
-      showToast('error', err.message || 'İstifadəçi yaradılarkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error creating user', 'Error');
     } finally {
       setCreating(false);
     }
@@ -74,14 +76,14 @@ export const UsersPage: React.FC = () => {
     try {
       if (user.isActive) {
         await tenantApi.deactivateUser(user.id);
-        showToast('warning', `${user.fullName} hesabı deaktiv edildi`, 'Deaktiv');
+        showToast('warning', `${user.fullName} deactivated`, 'Warning');
       } else {
         await tenantApi.activateUser(user.id);
-        showToast('success', `${user.fullName} hesabı aktivləşdirildi`, 'Aktiv');
+        showToast('success', `${user.fullName} activated`, 'Success');
       }
       loadData();
     } catch (err: any) {
-      showToast('error', err.message || 'Status dəyişdirilərkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error changing status', 'Error');
     }
   };
 
@@ -99,9 +101,9 @@ export const UsersPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Identity Providers / Users</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">{t('users.title', {}, 'Users')}</h2>
           <p className="text-sm text-[#A1A1AA]">
-            Təşkilat daxilindəki istifadəçilər, etimadnamələr və təyin olunmuş rollar.
+            {t('users.subtitle', {}, 'Təşkilat daxilindəki istifadəçilər, etimadnamələr və təyin olunmuş rollar.')}
           </p>
         </div>
         <button
@@ -109,14 +111,14 @@ export const UsersPage: React.FC = () => {
           className="btn-primary h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
         >
           <span className="material-symbols-outlined text-[18px]">person_add</span>
-          New User
+          {t('users.createNew', {}, 'New User')}
         </button>
       </div>
 
       {/* Filter Bar */}
       <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-2.5 flex flex-col md:flex-row justify-between items-center gap-4 shadow-md shadow-black/20">
         <div className="text-xs text-[#A1A1AA] px-2 font-medium">
-          Ümumi qeydiyyatlı istifadəçilər: <strong className="text-white">{users.length}</strong>
+          {t('users.title', {}, 'İstifadəçilər')}: <strong className="text-white">{users.length}</strong>
         </div>
 
         <div className="relative w-full md:w-72">
@@ -125,7 +127,7 @@ export const UsersPage: React.FC = () => {
           </span>
           <input
             className="w-full pl-9 pr-3 py-1.5 bg-[#121214] border border-[#27272A] rounded-xl text-xs text-white placeholder-[#71717A] outline-none focus:border-white/40 transition-all"
-            placeholder="Ad və ya email ilə axtar..."
+            placeholder={t('common.searchPlaceholder', {}, 'Ad və ya email ilə axtar...')}
             type="text"
             value={searchTerm}
             onChange={(e) => {
@@ -142,12 +144,12 @@ export const UsersPage: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#141416] border-b border-[#27272A] text-[11px] text-[#A1A1AA] uppercase tracking-wider font-semibold">
-                <th className="py-3 px-4">İstifadəçi</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Təyin Olunmuş Rollar</th>
-                <th className="py-3 px-4">Qeydiyyat Tarixi</th>
-                <th className="py-3 px-4 text-right">Əməliyyatlar</th>
+                <th className="py-3 px-4">{t('common.user', {}, 'İstifadəçi')}</th>
+                <th className="py-3 px-4">{t('auth.email', {}, 'Email')}</th>
+                <th className="py-3 px-4">{t('common.status', {}, 'Status')}</th>
+                <th className="py-3 px-4">{t('users.assignedRoles', {}, 'Təyin Olunmuş Rollar')}</th>
+                <th className="py-3 px-4">{t('common.createdAt', {}, 'Qeydiyyat Tarixi')}</th>
+                <th className="py-3 px-4 text-right">{t('common.actions', {}, 'Əməliyyatlar')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#27272A]/60 text-xs">
@@ -156,14 +158,14 @@ export const UsersPage: React.FC = () => {
                   <td colSpan={6} className="py-10 text-center text-[#A1A1AA]">
                     <span className="inline-flex items-center gap-2">
                       <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-                      İstifadəçilər yüklənir...
+                      {t('common.loading', {}, 'İstifadəçilər yüklənir...')}
                     </span>
                   </td>
                 </tr>
               ) : paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-[#A1A1AA]">
-                    Axtarışa uyğun heç bir istifadəçi tapılmadı.
+                    {t('common.none', {}, 'Axtarışa uyğun heç bir istifadəçi tapılmadı.')}
                   </td>
                 </tr>
               ) : (
@@ -188,7 +190,7 @@ export const UsersPage: React.FC = () => {
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          {u.isActive ? 'Active' : 'Deactivated'}
+                          {u.isActive ? t('common.active', {}, 'Active') : t('common.inactive', {}, 'Deactivated')}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
@@ -217,7 +219,7 @@ export const UsersPage: React.FC = () => {
                               : 'text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/30'
                           }`}
                         >
-                          {u.isActive ? 'Deaktiv Et' : 'Aktivləşdir'}
+                          {u.isActive ? t('tenants.suspendTenant', {}, 'Deaktiv Et') : t('tenants.activateTenant', {}, 'Aktivləşdir')}
                         </button>
                       </td>
                     </tr>
@@ -231,7 +233,7 @@ export const UsersPage: React.FC = () => {
         {/* Pagination Footer */}
         <div className="bg-[#141416] border-t border-[#27272A] px-4 py-3 flex items-center justify-between">
           <span className="text-xs text-[#71717A]">
-            Göstərilir: {filteredUsers.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
+            {t('common.showing', {}, 'Göstərilir')}: {filteredUsers.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
             {Math.min(currentPage * pageSize, filteredUsers.length)} / {filteredUsers.length}
           </span>
           <div className="flex items-center gap-1">
@@ -268,18 +270,18 @@ export const UsersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* New User Modal */}
+      {/* Create User Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
                   <span className="material-symbols-outlined text-lg">person_add</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Yeni İstifadəçi Hesabı</h3>
-                  <p className="text-xs text-[#71717A]">İstifadəçi etimadnaməsi və ilkin rolları</p>
+                  <h3 className="text-sm font-bold text-white">{t('users.createNew', {}, 'Yeni İstifadəçi')}</h3>
+                  <p className="text-xs text-[#71717A]">{t('users.subtitle', {}, 'İstifadəçi hesabı və rolları təyin edin')}</p>
                 </div>
               </div>
               <button onClick={() => setIsCreateOpen(false)} className="text-[#71717A] hover:text-white p-1">
@@ -289,11 +291,11 @@ export const UsersPage: React.FC = () => {
 
             <form onSubmit={handleCreateUser} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Ad, Soyad *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('users.fullName', {}, 'Ad, Soyad')} *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Məs: Rəvan Əliyev"
+                  placeholder="Məs: Cavid Məmmədov"
                   value={newFullName}
                   onChange={(e) => setNewFullName(e.target.value)}
                   className="w-full crm-input text-xs"
@@ -301,7 +303,7 @@ export const UsersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Email Ünvanı *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('auth.email', {}, 'Email Ünvanı')} *</label>
                 <input
                   type="email"
                   required
@@ -313,7 +315,7 @@ export const UsersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">İlkin Şifrə *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('auth.password', {}, 'İlkin Şifrə')} *</label>
                 <input
                   type="password"
                   required
@@ -324,7 +326,7 @@ export const UsersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-white mb-1">Təyin Ediləcək Rollar</label>
+                <label className="block text-xs font-bold text-white mb-1">{t('users.assignedRoles', {}, 'Təyin Ediləcək Rollar')}</label>
                 <div className="max-h-36 overflow-y-auto border border-[#27272A] rounded-xl p-2 space-y-1 bg-[#121214]">
                   {roles.map((r) => {
                     const isChecked = selectedRoleIds.includes(r.id);
@@ -369,14 +371,14 @@ export const UsersPage: React.FC = () => {
                   onClick={() => setIsCreateOpen(false)}
                   className="px-4 py-2 text-xs font-semibold btn-secondary rounded-xl cursor-pointer"
                 >
-                  Ləğv Et
+                  {t('common.cancel', {}, 'Ləğv Et')}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
                   className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer shadow-md"
                 >
-                  {creating ? 'Yaradılır...' : 'İstifadəçi Yarat'}
+                  {creating ? t('common.loading', {}, 'Yaradılır...') : t('users.createNew', {}, 'İstifadəçi Yarat')}
                 </button>
               </div>
             </form>

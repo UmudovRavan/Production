@@ -7,6 +7,7 @@ import type { TaskResponse, NotificationResponse, UserResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from '../components/UserSuggestionList';
 import {
     ArrowLeftIcon,
@@ -34,6 +35,7 @@ const TaskDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { addToast } = useNotifications();
+    const { t, language } = useLanguage();
     const [task, setTask] = useState<TaskResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [allUsers, setAllUsers] = useState<UserResponse[]>([]);

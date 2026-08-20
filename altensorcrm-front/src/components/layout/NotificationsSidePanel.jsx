@@ -7,11 +7,13 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { taskManagementApi } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const fetchNotifications = async () => {
     try {
@@ -94,7 +96,7 @@ const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#27272A]/80 bg-[#18181B] shrink-0">
           <div className="flex items-center gap-2.5">
-            <h2 className="text-base font-bold text-white tracking-tight">Notifications</h2>
+            <h2 className="text-base font-bold text-white tracking-tight">{t('nav.notifications', {}, 'Bildirişlər')}</h2>
             {unreadCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-bold border border-fuchsia-500/30">
                 {unreadCount}
@@ -106,7 +108,7 @@ const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
             <button
               type="button"
               onClick={handleMarkAllRead}
-              title="Mark all as read"
+              title={t('notifications.markAllRead', {}, 'Hamısını oxunmuş et')}
               className="p-1.5 rounded-lg hover:bg-[#2C2C2E] hover:text-white transition-colors cursor-pointer text-[#A1A1AA] hover:text-[#38BDF8]"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -118,7 +120,7 @@ const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
             <button
               type="button"
               onClick={onClose}
-              title="Close"
+              title={t('common.close', {}, 'Bağla')}
               className="p-1 rounded-lg hover:bg-[#2C2C2E] hover:text-white transition-colors cursor-pointer"
             >
               <XMarkIcon className="w-5 h-5 stroke-[2]" />
@@ -131,17 +133,17 @@ const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
           {loading ? (
             <div className="flex items-center justify-center gap-2 text-xs text-[#71717A] my-auto">
               <ArrowPathIcon className="w-4 h-4 animate-spin text-sky-400" />
-              <span>Notifications loading...</span>
+              <span>{t('common.loading', {}, 'Yüklənir...')}</span>
             </div>
           ) : notifications.length === 0 ? (
-            /* EMPTY STATE (EXACT MATCH TO REFERENCE SCREENSHOT) */
+            /* EMPTY STATE */
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none my-auto">
               <BellIcon className="w-12 h-12 text-[#52525B] stroke-[1.25] mb-3" />
               <h3 className="text-sm font-bold text-white tracking-tight">
-                No New Notifications
+                {t('notifications.noNotifications', {}, 'Yeni bildiriş yoxdur')}
               </h3>
               <p className="text-xs text-[#71717A] mt-1">
-                You have no new notifications
+                {t('notifications.noNotificationsDesc', {}, 'Hal-hazırda heç bir bildirişiniz mövcud deyil')}
               </p>
             </div>
           ) : (
@@ -166,15 +168,15 @@ const NotificationsSidePanel = ({ isOpen, onClose, sidebarWidth = 224 }) => {
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center justify-between gap-2">
                       <h4 className={`text-xs font-bold truncate ${item.isRead ? 'text-[#E4E4E7]' : 'text-white'}`}>
-                        {item.title || item.Title || 'Notification'}
+                        {item.title || item.Title || t('notifications.notification', {}, 'Bildiriş')}
                       </h4>
                       <span className="text-[10px] text-[#71717A] shrink-0">
-                        {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
+                        {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : t('common.now', {}, 'İndi')}
                       </span>
                     </div>
 
                     <p className="text-xs text-[#A1A1AA] leading-normal line-clamp-2">
-                      {item.message || item.Message || 'New activity in CRM'}
+                      {item.message || item.Message || ''}
                     </p>
                   </div>
 

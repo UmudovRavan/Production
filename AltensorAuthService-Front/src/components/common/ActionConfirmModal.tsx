@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export type ActionModalVariant = 'danger' | 'warning' | 'primary' | 'success';
 
@@ -28,16 +29,22 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
   itemHighlight,
   variant = 'warning',
   icon,
-  confirmText = 'Təsdiq Et',
-  cancelText = 'Ləğv Et',
+  confirmText,
+  cancelText,
   showReasonInput = false,
-  reasonPlaceholder = 'Dondurma və ya dəyişikliyin səbəbini qeyd edin...',
-  reasonLabel = 'Əməliyyat Səbəbi',
+  reasonPlaceholder,
+  reasonLabel,
   isReasonRequired = false
 }) => {
+  const { t } = useLanguage();
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const finalConfirmText = confirmText || t('common.confirm', {}, 'Təsdiq Et');
+  const finalCancelText = cancelText || t('common.cancel', {}, 'Ləğv Et');
+  const finalReasonLabel = reasonLabel || t('common.actions', {}, 'Əməliyyat Səbəbi');
+  const finalReasonPlaceholder = reasonPlaceholder || t('common.searchPlaceholder', {}, 'Səbəbi qeyd edin...');
 
   useEffect(() => {
     if (isOpen) {
@@ -113,7 +120,7 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
   const vStyles = getVariantStyles();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div
         className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
@@ -153,7 +160,7 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
           {showReasonInput && (
             <div className="pt-2 space-y-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                {reasonLabel} {isReasonRequired && <span className="text-rose-400">*</span>}
+                {finalReasonLabel} {isReasonRequired && <span className="text-rose-400">*</span>}
               </label>
               <textarea
                 ref={inputRef}
@@ -161,12 +168,9 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
                 required={isReasonRequired}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder={reasonPlaceholder}
+                placeholder={finalReasonPlaceholder}
                 className="w-full crm-input text-xs resize-none placeholder-[#71717A]"
               />
-              <span className="text-[11px] text-[#71717A] block text-right">
-                Bu qeyd audit tarixçəsində saxlanılacaq
-              </span>
             </div>
           )}
 
@@ -178,7 +182,7 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
               disabled={loading}
               className="px-4 py-2 text-xs font-semibold btn-secondary rounded-xl cursor-pointer disabled:opacity-50"
             >
-              {cancelText}
+              {finalCancelText}
             </button>
             <button
               type="submit"
@@ -190,7 +194,7 @@ export const ActionConfirmModal: React.FC<ActionConfirmModalProps> = ({
                   progress_activity
                 </span>
               )}
-              <span>{loading ? 'İcra olunur...' : confirmText}</span>
+              <span>{loading ? t('common.loading', {}, 'İcra olunur...') : finalConfirmText}</span>
             </button>
           </div>
         </form>

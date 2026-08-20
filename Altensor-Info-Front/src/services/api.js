@@ -1,6 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_CRM_API_URL || 'http://31.57.77.199:5052/api';
-const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://31.57.77.199:5051/api';
-const TASK_MGMT_API_URL = import.meta.env.VITE_TMS_API_URL || 'http://31.57.77.199:5053/api';
+const API_BASE_URL = import.meta.env.VITE_CRM_API_URL || 'https://api-crm.altensor.com/api';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'https://api-info.altensor.com/api';
+const TASK_MGMT_API_URL = import.meta.env.VITE_TMS_API_URL || 'https://api-tms.altensor.com/api';
 
 export const getAuthToken = () =>
   localStorage.getItem('accessToken') || localStorage.getItem('token') || localStorage.getItem('authToken');
@@ -76,6 +76,28 @@ export const parseJwt = (token) => {
     };
   } catch {
     return null;
+  }
+};
+
+export const isTokenExpired = (token) => {
+  try {
+    if (!token) return true;
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (!payload.exp) return false;
+    // 10 second buffer for clock skew
+    return Date.now() >= (payload.exp * 1000) - 10000;
+  } catch {
+    return true;
   }
 };
 

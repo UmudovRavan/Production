@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNotifications } from '../context/NotificationContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../api';
 import {
@@ -36,6 +37,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
     const { notifications: contextNotifications, unreadCount: contextUnreadCount, markAsRead } = useNotifications();
     const { isDark, toggleTheme } = useTheme();
+    const { t, language, setLanguage, languages } = useLanguage();
     const navigate = useNavigate();
 
     const notifications = contextNotifications.length > 0 ? contextNotifications : propNotifications;
@@ -138,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({
                             className={`flex-1 bg-transparent text-xs outline-none border-none focus:ring-0 px-2.5 ${
                                 isDark ? 'text-white placeholder:text-[#71717A]' : 'text-slate-900 placeholder:text-slate-400'
                             }`}
-                            placeholder="Tapşırıqları, iş qruplarını axtar... (⌘K)"
+                            placeholder={t('nav.searchPlaceholder', {}, 'Tapşırıqları, iş qruplarını axtar... (⌘K)')}
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -160,10 +162,15 @@ const Header: React.FC<HeaderProps> = ({
                             }`}
                         >
                             <div className={`px-3 py-2 border-b text-[11px] font-bold uppercase tracking-wider ${isDark ? 'border-[#2C2C2E] text-[#71717A]' : 'border-slate-100 text-slate-500'}`}>
-                                Qısa Axtarışlar
+                                {t('common.quickSearches', {}, 'Qısa Axtarışlar')}
                             </div>
                             <div className="p-1">
-                                {['Bütün aktiv tapşırıqlar', 'Gecikmiş tapşırıqlar', 'İş Qrupları', 'Liderlər lövhəsi'].map((item, i) => (
+                                {[
+                                    t('tasks.allTasksTitle', {}, 'Bütün aktiv tapşırıqlar'),
+                                    t('common.overdue', {}, 'Gecikmiş tapşırıqlar'),
+                                    t('nav.workgroups', {}, 'İş Qrupları'),
+                                    t('nav.leaderboard', {}, 'Liderlər lövhəsi')
+                                ].map((item, i) => (
                                     <button
                                         key={i}
                                         onClick={() => handleSearchSubmit(item)}
@@ -181,8 +188,20 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            {/* Right: Notifications, User Profile */}
+            {/* Right: Theme, Notifications, User Profile */}
             <div className="flex items-center gap-2">
+                {/* Theme Toggle */}
+                <button
+                    onClick={toggleTheme}
+                    type="button"
+                    className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                        isDark ? 'hover:bg-white/10 text-[#A1A1AA] hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                    }`}
+                    title={isDark ? t('settings.lightTheme', {}, 'İşıqlı Rejim') : t('settings.darkTheme', {}, 'Qaranlıq Rejim')}
+                >
+                    {isDark ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-slate-500" />}
+                </button>
+
                 {/* Notifications Dropdown */}
                 <div className="relative" ref={notifRef}>
                     <button
@@ -191,7 +210,7 @@ const Header: React.FC<HeaderProps> = ({
                         className={`p-2 rounded-xl transition-colors relative cursor-pointer ${
                             isDark ? 'hover:bg-white/10 text-[#A1A1AA] hover:text-white' : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
                         }`}
-                        title="Bildirişlər"
+                        title={t('nav.notifications', {}, 'Bildirişlər')}
                     >
                         <BellIcon className="w-4 h-4" />
                         {notificationCount > 0 && (
@@ -206,20 +225,20 @@ const Header: React.FC<HeaderProps> = ({
                             }`}
                         >
                             <div className={`p-3 border-b flex items-center justify-between ${isDark ? 'border-[#2C2C2E]' : 'border-slate-100'}`}>
-                                <span className="text-xs font-bold">Bildirişlər</span>
+                                <span className="text-xs font-bold">{t('nav.notifications', {}, 'Bildirişlər')}</span>
                                 <Link
                                     to="/notifications"
                                     onClick={() => setShowNotifDropdown(false)}
                                     className="text-[11px] text-blue-400 hover:underline font-semibold"
                                 >
-                                    Hamısına bax
+                                    {t('common.viewAll', {}, 'Hamısına bax')}
                                 </Link>
                             </div>
 
                             <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
                                 {sortedNotifications.length === 0 ? (
                                     <div className="p-6 text-center text-xs text-slate-500">
-                                        Yeni bildiriş yoxdur
+                                        {t('notifications.noNotifications', {}, 'Yeni bildiriş yoxdur')}
                                     </div>
                                 ) : (
                                     sortedNotifications.slice(0, 5).map((n) => (
@@ -240,7 +259,7 @@ const Header: React.FC<HeaderProps> = ({
                                                 {n.message}
                                             </p>
                                             <span className="text-[10px] text-slate-500">
-                                                {new Date(n.createdAt).toLocaleDateString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(n.createdAt).toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                     ))
@@ -293,7 +312,7 @@ const Header: React.FC<HeaderProps> = ({
                                 }`}
                             >
                                 <Cog6ToothIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Tənzimləmələr</span>
+                                <span>{t('nav.settings', {}, 'Tənzimləmələr')}</span>
                             </button>
 
                             <button
@@ -302,7 +321,7 @@ const Header: React.FC<HeaderProps> = ({
                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 hover:text-rose-400 text-rose-500 transition-colors w-full text-left cursor-pointer`}
                             >
                                 <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                                <span>Çıxış et</span>
+                                <span>{t('nav.logout', {}, 'Çıxış et')}</span>
                             </button>
                         </div>
                     )}

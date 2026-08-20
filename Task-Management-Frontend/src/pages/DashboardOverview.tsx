@@ -8,6 +8,7 @@ import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     ArrowPathIcon,
     PlusIcon,
@@ -59,6 +60,7 @@ const CrmChartTooltip = ({ active, payload, label }: any) => {
 
 const DashboardOverview: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,15 +71,15 @@ const DashboardOverview: React.FC = () => {
     const [activeSliceIndex, setActiveSliceIndex] = useState(0);
 
     const displayName = useMemo(() => {
-        if (!userInfo) return 'İstifadəçi';
+        if (!userInfo) return t('common.user', {}, 'İstifadəçi');
         if (userInfo.userName) {
             return userInfo.userName.charAt(0).toUpperCase() + userInfo.userName.slice(1);
         }
         if (userInfo.email) {
             return userInfo.email.split('@')[0];
         }
-        return 'İstifadəçi';
-    }, [userInfo]);
+        return t('common.user', {}, 'İstifadəçi');
+    }, [userInfo, t]);
 
     const userRole = useMemo(() => {
         if (!userInfo || !userInfo.roles?.length) return 'Employee';
@@ -138,9 +140,9 @@ const DashboardOverview: React.FC = () => {
 
     const getGreeting = (): string => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Sabahınız xeyir';
-        if (hour < 18) return 'Hər vaxtınız xeyir';
-        return 'Axşamınız xeyir';
+        if (hour < 12) return t('common.goodMorning', {}, 'Sabahınız xeyir');
+        if (hour < 18) return t('common.goodDay', {}, 'Hər vaxtınız xeyir');
+        return t('common.goodEvening', {}, 'Axşamınız xeyir');
     };
 
     // Chart Data for Task Trends

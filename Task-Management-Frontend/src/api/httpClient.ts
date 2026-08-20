@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { authService } from './authService';
 
-const BASE_URL = import.meta.env.VITE_TMS_API_URL || 'http://31.57.77.199:5053/api';
+const BASE_URL = import.meta.env.VITE_TMS_API_URL || 'https://api-tms.altensor.com/api';
 
 /**
  * Enterprise-grade Axios HTTP Client for TMS API

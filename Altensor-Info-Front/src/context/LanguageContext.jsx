@@ -11,7 +11,7 @@ const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguageState] = useState(() => {
-    const saved = localStorage.getItem('crmLanguage');
+    const saved = localStorage.getItem('altensor_language') || localStorage.getItem('crmLanguage');
     if (saved && ['az', 'en', 'ru'].includes(saved)) {
       return saved;
     }
@@ -21,6 +21,7 @@ export const LanguageProvider = ({ children }) => {
   const setLanguage = (newLang) => {
     if (['az', 'en', 'ru'].includes(newLang)) {
       setLanguageState(newLang);
+      localStorage.setItem('altensor_language', newLang);
       localStorage.setItem('crmLanguage', newLang);
       document.documentElement.lang = newLang;
     }

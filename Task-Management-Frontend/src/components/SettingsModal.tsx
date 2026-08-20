@@ -4,6 +4,7 @@ import { parseJwtToken, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
 import type { UserResponse } from '../dto';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
     XMarkIcon,
     PencilSquareIcon,
@@ -35,6 +36,7 @@ type TabType = 'profile' | 'preferences' | 'general' | 'dashboard' | 'brand' | '
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { theme, setTheme, isDark } = useTheme();
+    const { t, language, setLanguage } = useLanguage();
     const [activeTab, setActiveTab] = useState<TabType>('profile');
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [avatarTimestamp, setAvatarTimestamp] = useState<number>(Date.now());
@@ -55,7 +57,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [passwordSuccess, setPasswordSuccess] = useState('');
 
     // Preferences State
-    const [selectedLanguage, setSelectedLanguage] = useState<'az' | 'en' | 'ru'>('az');
     const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
     const [emailNotifs, setEmailNotifs] = useState(true);
     const [desktopNotifs, setDesktopNotifs] = useState(true);
@@ -712,15 +713,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                     <p className="font-bold text-white">İnterfeys Dili</p>
                                                 </div>
                                                 <p className="text-[11px] text-[#71717A]">
-                                                    Tətbiqin nümayiş olunan əsas dili.
+                                                    {t('settings.languageSubtitle', {}, 'Tətbiqdə istifadə etmək istədiyiniz dili seçin.')}
                                                 </p>
                                             </div>
 
                                             <select
-                                                value={selectedLanguage}
+                                                value={language}
                                                 onChange={(e) => {
-                                                    setSelectedLanguage(e.target.value as any);
-                                                    showToast('Dil tənzimləməsi yadda saxlanıldı!');
+                                                    setLanguage(e.target.value as any);
+                                                    showToast(t('settings.savedSuccess', {}, 'Dil tənzimləməsi yadda saxlanıldı!'));
                                                 }}
                                                 className="bg-[#27272A] border border-[#3F3F46] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
                                             >

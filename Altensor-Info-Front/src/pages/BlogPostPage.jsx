@@ -3,9 +3,11 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
 import altensorLogo from '../assets/Altensor-Logo.png';
 import { BLOG_POSTS } from '../data/blogData';
+import { useLanguage } from '../context/LanguageContext';
 
 const BlogPostPage = () => {
   const { slug } = useParams();
+  const { t } = useLanguage();
   const post = BLOG_POSTS.find((p) => p.slug === slug);
 
   if (!post) {
@@ -31,7 +33,7 @@ const BlogPostPage = () => {
             to="/blog"
             className="inline-flex items-center gap-2 font-label-sm text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors mb-8"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span> Back to Editorial
+            <span className="material-symbols-outlined text-sm">arrow_back</span> {t('blog.backToBlog', {}, 'Back to Editorial')}
           </Link>
 
           {/* Article Header */}

@@ -18,7 +18,7 @@ export const getProfilePictureUrl = (
     timestamp?: number
 ): string | undefined => {
     if (!userId || !profilePictureUrl) return undefined;
-    const base = import.meta.env.VITE_TMS_API_URL || 'http://31.57.77.199:5053/api';
+    const base = import.meta.env.VITE_TMS_API_URL || 'https://api-tms.altensor.com/api';
     return `${base}/Authorize/ProfilePicture/${userId}${timestamp ? `?t=${timestamp}` : ''}`;
 };
 

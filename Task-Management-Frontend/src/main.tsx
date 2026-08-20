@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import { AppRouter } from './routes';
-import { AuthProvider, NotificationProvider, ThemeProvider } from './context';
+import { AuthProvider, NotificationProvider, ThemeProvider, LanguageProvider } from './context';
 import NotificationToast from './components/NotificationToast';
 import BrandedLoader from './components/BrandedLoader';
 import { ChatbotProvider } from './components/chatbot/ChatbotProvider';
@@ -18,19 +18,21 @@ document.documentElement.style.setProperty('--accent', savedAccent);
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider>
-        <BrandedLoader />
-        <AuthProvider>
-          <NotificationProvider>
-            <ChatbotProvider>
-              <AppRouter />
-              <NotificationToast />
-              <ChatWindow />
-              <ChatbotTrigger />
-            </ChatbotProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrandedLoader />
+          <AuthProvider>
+            <NotificationProvider>
+              <ChatbotProvider>
+                <AppRouter />
+                <NotificationToast />
+                <ChatWindow />
+                <ChatbotTrigger />
+              </ChatbotProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,
 );

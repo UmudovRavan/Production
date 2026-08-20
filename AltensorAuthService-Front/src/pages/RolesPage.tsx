@@ -4,6 +4,7 @@ import { permissionsApi } from '../api/permissionsApi';
 import { RoleResponse } from '../types/role.types';
 import { PermissionResponse } from '../types/permission.types';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import ActionConfirmModal from '../components/common/ActionConfirmModal';
 
 const moduleMap: Record<string, string> = {
@@ -16,6 +17,7 @@ const moduleMap: Record<string, string> = {
 
 export const RolesPage: React.FC = () => {
   const { showToast } = useToast();
+  const { t } = useLanguage();
 
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [permissions, setPermissions] = useState<PermissionResponse[]>([]);
@@ -62,20 +64,49 @@ export const RolesPage: React.FC = () => {
       setRoles(rolesData);
       setPermissions(permsData);
 
-      if (rolesData.length > 0) {
-        const desiredId = targetRoleId || selectedRoleIdRef.current;
-        const matched = desiredId ? rolesData.find((r) => r.id === desiredId) : null;
-        const toSelect = matched || rolesData[0];
+      const activeId = targetRoleId || selectedRoleIdRef.current;
+      if (activeId) {
+        const found = rolesData.find((r) => r.id === activeId);
+        if (found) {
+          setSelectedRole(found);
+          const initialIds: string[] = [];
+          if (found.permissions && Array.isArray(found.permissions)) {
+            found.permissions.forEach((p: any) => {
+              if (typeof p === 'string') initialIds.push(p);
+              else if (p?.id) initialIds.push(p.id);
+              else if (p?.code) initialIds.push(p.code);
+            });
+          }
+          if (found.permissionIds && Array.isArray(found.permissionIds)) {
+            found.permissionIds.forEach((id: string) => {
+              if (!initialIds.includes(id)) initialIds.push(id);
+            });
+          }
+          setSelectedPermissionIds(initialIds);
+          return;
+        }
+      }
 
-        setSelectedRole(toSelect);
-        const initialPerms = [
-          ...(toSelect.permissionIds || []),
-          ...(toSelect.permissions || [])
-        ];
-        setSelectedPermissionIds(initialPerms);
+      if (rolesData.length > 0) {
+        const first = rolesData[0];
+        setSelectedRole(first);
+        const initialIds: string[] = [];
+        if (first.permissions && Array.isArray(first.permissions)) {
+          first.permissions.forEach((p: any) => {
+            if (typeof p === 'string') initialIds.push(p);
+            else if (p?.id) initialIds.push(p.id);
+            else if (p?.code) initialIds.push(p.code);
+          });
+        }
+        if (first.permissionIds && Array.isArray(first.permissionIds)) {
+          first.permissionIds.forEach((id: string) => {
+            if (!initialIds.includes(id)) initialIds.push(id);
+          });
+        }
+        setSelectedPermissionIds(initialIds);
       }
     } catch (err: any) {
-      showToast('error', err.message || 'Məlumatlar yüklənərkən xəta baş verdi', 'Xəta');
+      showToast('error', err.message || 'Error loading roles & permissions', 'Error');
     } finally {
       setLoading(false);
     }
@@ -87,17 +118,26 @@ export const RolesPage: React.FC = () => {
 
   const handleRoleSelect = (role: RoleResponse) => {
     setSelectedRole(role);
-    const initialPerms = [
-      ...(role.permissionIds || []),
-      ...(role.permissions || [])
-    ];
-    setSelectedPermissionIds(initialPerms);
+    const initialIds: string[] = [];
+    if (role.permissions && Array.isArray(role.permissions)) {
+      role.permissions.forEach((p: any) => {
+        if (typeof p === 'string') initialIds.push(p);
+        else if (p?.id) initialIds.push(p.id);
+        else if (p?.code) initialIds.push(p.code);
+      });
+    }
+    if (role.permissionIds && Array.isArray(role.permissionIds)) {
+      role.permissionIds.forEach((id: string) => {
+        if (!initialIds.includes(id)) initialIds.push(id);
+      });
+    }
+    setSelectedPermissionIds(initialIds);
   };
 
   const handleTogglePermission = (p: PermissionResponse) => {
-    if (!selectedRole || selectedRole.isSystemRole) return;
-
-    if (isPermissionActive(p)) {
+    if (selectedRole?.isSystemRole) return;
+    const active = isPermissionActive(p);
+    if (active) {
       setSelectedPermissionIds(
         selectedPermissionIds.filter(
           (idOrCode) =>
@@ -112,24 +152,23 @@ export const RolesPage: React.FC = () => {
   };
 
   const handleSavePermissions = async () => {
-    if (!selectedRole || selectedRole.isSystemRole) return;
+    if (!selectedRole) return;
+    if (selectedRole.isSystemRole) {
+      showToast('warning', 'System roles cannot be modified.', 'Warning');
+      return;
+    }
 
     setSaving(true);
     try {
-      const currentRoleId = selectedRole.id;
-      const permIdsToSend = permissions
-        .filter((p) => isPermissionActive(p))
-        .map((p) => p.id);
-
-      await tenantApi.updateRole(currentRoleId, {
+      await tenantApi.updateRole(selectedRole.id, {
         name: selectedRole.name,
         description: selectedRole.description,
-        permissionIds: permIdsToSend
+        permissionIds: selectedPermissionIds
       });
-      showToast('success', `${selectedRole.name} rolu uğurla yeniləndi!`, 'Uğurlu');
-      await loadData(currentRoleId);
+      showToast('success', t('roles.roleUpdated', {}, 'Rol məlumatları yeniləndi!'), 'Success');
+      await loadData(selectedRole.id);
     } catch (err: any) {
-      showToast('error', err.message || 'Rolu yeniləyərkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error updating permissions', 'Error');
     } finally {
       setSaving(false);
     }
@@ -137,21 +176,21 @@ export const RolesPage: React.FC = () => {
 
   const executeDeleteRole = async () => {
     if (!selectedRole || selectedRole.isSystemRole) return;
-
     try {
       await tenantApi.deleteRole(selectedRole.id);
-      showToast('success', `${selectedRole.name} rolu silindi!`, 'Silindi');
-      loadData();
+      showToast('success', t('roles.roleDeleted', {}, 'Rol silindi.'), 'Success');
+      setIsDeleteModalOpen(false);
+      setSelectedRole(null);
+      await loadData();
     } catch (err: any) {
-      showToast('error', err.message || 'Rol silinərkən xəta', 'Xəta');
-      throw err;
+      showToast('error', err.message || 'Error deleting role', 'Error');
     }
   };
 
   const handleCreateCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRoleName) {
-      showToast('warning', 'Rol adını daxil edin', 'Xəbərdarlıq');
+      showToast('warning', t('common.required', {}, 'Rol adını daxil edin'), 'Warning');
       return;
     }
     setCreating(true);
@@ -161,14 +200,20 @@ export const RolesPage: React.FC = () => {
         description: newRoleDescription.trim() || undefined,
         permissionIds: newRolePermissionIds
       });
-      showToast('success', `${newRoleName} xüsusi rolu yaradıldı!`, 'Uğurlu');
+      const roleId =
+        (created as any)?.id ||
+        (created as any)?.data?.id ||
+        (created as any)?.roleId ||
+        (created as any)?.data?.roleId;
+
+      showToast('success', t('roles.roleCreated', {}, 'Yeni rol uğurla əlavə edildi!'), 'Success');
       setIsCreateOpen(false);
       setNewRoleName('');
       setNewRoleDescription('');
       setNewRolePermissionIds([]);
-      await loadData(created?.id);
+      await loadData(roleId);
     } catch (err: any) {
-      showToast('error', err.message || 'Rol yaradılarkən xəta', 'Xəta');
+      showToast('error', err.message || 'Error creating role', 'Error');
     } finally {
       setCreating(false);
     }
@@ -194,9 +239,9 @@ export const RolesPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Roles &amp; Policy Matrix</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">{t('roles.title', {}, 'Roles')}</h2>
           <p className="text-sm text-[#A1A1AA]">
-            Sistem və xüsusi rolların icazələr matrisi üzrə təyin edilməsi.
+            {t('roles.subtitle', {}, 'Sistem və xüsusi rolların icazələr matrisi üzrə təyin edilməsi.')}
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -205,7 +250,7 @@ export const RolesPage: React.FC = () => {
             className="btn-primary h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Create Custom Role
+            {t('roles.createNew', {}, 'Create Custom Role')}
           </button>
         </div>
       </div>
@@ -217,7 +262,7 @@ export const RolesPage: React.FC = () => {
           <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-4 shadow-lg shadow-black/20 space-y-3">
             <div className="flex justify-between items-center px-1 pb-2 border-b border-[#27272A]">
               <span className="text-xs font-bold text-white uppercase tracking-wider">
-                Mövcud Rollar ({roles.length})
+                {t('roles.title', {}, 'Rollar')} ({roles.length})
               </span>
               <span className="material-symbols-outlined text-base text-[#71717A]">admin_panel_settings</span>
             </div>
@@ -226,7 +271,7 @@ export const RolesPage: React.FC = () => {
               {loading ? (
                 <div className="py-8 text-center text-xs text-[#A1A1AA]">
                   <span className="material-symbols-outlined animate-spin text-base mr-1">progress_activity</span>
-                  Rollar yüklənir...
+                  {t('common.loading', {}, 'Rollar yüklənir...')}
                 </div>
               ) : (
                 roles.map((r) => {
@@ -252,11 +297,11 @@ export const RolesPage: React.FC = () => {
                           )}
                         </div>
                         <p className="text-[11px] text-[#71717A] truncate mt-0.5">
-                          {r.description || 'Xüsusi istifadəçi rolu'}
+                          {r.description || 'Custom role'}
                         </p>
                       </div>
                       <span className="text-[11px] font-mono text-[#71717A] shrink-0">
-                        {rolePermCount} icazə
+                        {rolePermCount} {t('roles.permissions', {}, 'icazə')}
                       </span>
                     </div>
                   );
@@ -286,7 +331,7 @@ export const RolesPage: React.FC = () => {
                     )}
                   </div>
                   <p className="text-xs text-[#71717A] mt-0.5">
-                    {selectedRole.description || 'Bu rol üçün aktiv icazələr matrisi'}
+                    {selectedRole.description || 'Active permissions matrix for this role'}
                   </p>
                 </div>
 
@@ -296,10 +341,10 @@ export const RolesPage: React.FC = () => {
                       <button
                         onClick={() => setIsDeleteModalOpen(true)}
                         className="px-3 py-1.5 rounded-xl border border-rose-500/30 hover:bg-rose-500/15 text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Rolu sil"
+                        title={t('common.delete', {}, 'Rolu sil')}
                       >
                         <span className="material-symbols-outlined text-[16px]">delete</span>
-                        Sil
+                        {t('common.delete', {}, 'Sil')}
                       </button>
                       <button
                         onClick={handleSavePermissions}
@@ -307,7 +352,7 @@ export const RolesPage: React.FC = () => {
                         className="btn-primary px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-md"
                       >
                         <span className="material-symbols-outlined text-[16px]">save</span>
-                        {saving ? 'Yadda saxlanılır...' : 'Dəyişiklikləri Saxla'}
+                        {saving ? t('common.loading', {}, 'Yadda saxlanılır...') : t('common.save', {}, 'Dəyişiklikləri Saxla')}
                       </button>
                     </>
                   )}
@@ -323,7 +368,7 @@ export const RolesPage: React.FC = () => {
                       activeTab === 'matrix' ? 'bg-[#27272A] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
                     }`}
                   >
-                    Permissions Matrix ({totalActiveCount})
+                    {t('roles.permissions', {}, 'Permissions Matrix')} ({totalActiveCount})
                   </button>
                   <button
                     onClick={() => setActiveTab('settings')}
@@ -331,7 +376,7 @@ export const RolesPage: React.FC = () => {
                       activeTab === 'settings' ? 'bg-[#27272A] text-white shadow-xs' : 'text-[#A1A1AA] hover:text-white'
                     }`}
                   >
-                    Role Scope &amp; Info
+                    {t('settings.general', {}, 'Role Scope & Info')}
                   </button>
                 </div>
 
@@ -341,7 +386,7 @@ export const RolesPage: React.FC = () => {
                   </span>
                   <input
                     type="text"
-                    placeholder="Modul axtar..."
+                    placeholder={t('common.search', {}, 'Modul axtar...')}
                     value={moduleSearch}
                     onChange={(e) => setModuleSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 bg-[#121214] border border-[#27272A] rounded-xl text-xs text-white placeholder-[#71717A] outline-none focus:border-white/40 transition-colors"
@@ -362,7 +407,7 @@ export const RolesPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-xs text-white uppercase tracking-wider">{modName}</span>
                             <span className="text-[10px] text-[#71717A] font-mono">
-                              ({activeCount} / {modPerms.length} aktiv)
+                              ({activeCount} / {modPerms.length} {t('common.active', {}, 'aktiv')})
                             </span>
                           </div>
                         </div>
@@ -419,17 +464,9 @@ export const RolesPage: React.FC = () => {
               {activeTab === 'settings' && (
                 <div className="p-6 space-y-4 text-xs">
                   <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl space-y-2">
-                    <span className="text-[#71717A] block">Rol Təsviri:</span>
+                    <span className="text-[#71717A] block">{t('roles.description', {}, 'Rol Təsviri')}:</span>
                     <p className="text-white font-medium">
-                      {selectedRole.description || 'Təsvir əlavə olunmayıb.'}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-[#121214] border border-[#27272A] rounded-xl space-y-2">
-                    <span className="text-[#71717A] block">Təhlükəsizlik Siyasəti:</span>
-                    <p className="text-[#A1A1AA]">
-                      Bu rolun təyin olunduğu istifadəçilər yalnız yuxarıdakı icazələr matrisində seçilmiş mikroservis
-                      hüquqlarına malik olacaqlar. JWT token generatoru hər login zamanı həmin icazələri avtomatik
-                      olaraq imzalanmış iddia (claim) kimi kodlaşdırır.
+                      {selectedRole.description || 'No description provided.'}
                     </p>
                   </div>
                 </div>
@@ -437,7 +474,7 @@ export const RolesPage: React.FC = () => {
             </div>
           ) : (
             <div className="bg-[#18181B] border border-[#27272A] rounded-2xl p-12 text-center text-[#71717A] text-xs">
-              Məlumatlara baxmaq üçün sol tərəfdən bir rol seçin.
+              {t('common.none', {}, 'Məlumatlara baxmaq üçün sol tərəfdən bir rol seçin.')}
             </div>
           )}
         </div>
@@ -445,16 +482,16 @@ export const RolesPage: React.FC = () => {
 
       {/* Create Custom Role Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#27272A] mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center">
                   <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Yeni Xüsusi Rol Yarat</h3>
-                  <p className="text-xs text-[#71717A]">Şirkətiniz üçün unikal icazə profili</p>
+                  <h3 className="text-sm font-bold text-white">{t('roles.createNew', {}, 'Yeni Xüsusi Rol Yarat')}</h3>
+                  <p className="text-xs text-[#71717A]">{t('roles.subtitle', {}, 'Şirkətiniz üçün unikal icazə profili')}</p>
                 </div>
               </div>
               <button onClick={() => setIsCreateOpen(false)} className="text-[#71717A] hover:text-white p-1">
@@ -464,7 +501,7 @@ export const RolesPage: React.FC = () => {
 
             <form onSubmit={handleCreateCustomRole} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Rol Adı *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('roles.roleName', {}, 'Rol Adı')} *</label>
                 <input
                   type="text"
                   required
@@ -476,7 +513,7 @@ export const RolesPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Təsvir (Opsional)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{t('roles.description', {}, 'Təsvir (Opsional)')}</label>
                 <input
                   type="text"
                   placeholder="Satış komandası rəhbərinin hüquqları..."
@@ -488,9 +525,9 @@ export const RolesPage: React.FC = () => {
 
               <div className="pt-2 border-t border-[#27272A]">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-bold text-white">İlkin İcazələr</label>
+                  <label className="text-xs font-bold text-white">{t('roles.permissions', {}, 'İlkin İcazələr')}</label>
                   <span className="text-[10px] text-[#71717A] font-mono">
-                    ({newRolePermissionIds.length} / {permissions.length} seçilib)
+                    ({newRolePermissionIds.length} / {permissions.length} {t('common.active', {}, 'seçilib')})
                   </span>
                 </div>
                 <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
@@ -534,14 +571,14 @@ export const RolesPage: React.FC = () => {
                   onClick={() => setIsCreateOpen(false)}
                   className="px-4 py-2 text-xs font-semibold btn-secondary rounded-xl cursor-pointer"
                 >
-                  Ləğv Et
+                  {t('common.cancel', {}, 'Ləğv Et')}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
                   className="px-4 py-2 text-xs font-semibold btn-primary rounded-xl cursor-pointer"
                 >
-                  {creating ? 'Yaradılır...' : 'Rol Yarat'}
+                  {creating ? t('common.loading', {}, 'Yaradılır...') : t('roles.createNew', {}, 'Rol Yarat')}
                 </button>
               </div>
             </form>
@@ -554,12 +591,12 @@ export const RolesPage: React.FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={executeDeleteRole}
-        title="Xüsusi Rolu Sil"
-        description="Bu xüsusi rolu silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarılmır."
+        title={t('common.delete', {}, 'Xüsusi Rolu Sil')}
+        description={t('tenants.deleteWarning', {}, 'Bu xüsusi rolu silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarılmır.')}
         itemHighlight={selectedRole ? selectedRole.name : undefined}
         variant="danger"
         icon="delete_forever"
-        confirmText="Rolu Sil"
+        confirmText={t('common.delete', {}, 'Rolu Sil')}
         showReasonInput={false}
       />
     </div>

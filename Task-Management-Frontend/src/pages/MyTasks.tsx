@@ -7,6 +7,7 @@ import type { TaskResponse, NotificationResponse } from '../dto';
 import { TaskStatus, DifficultyLevel } from '../dto';
 import { parseJwtToken, isTokenExpired, getPrimaryRole, getProfilePictureUrl } from '../utils';
 import type { UserInfo } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -29,6 +30,7 @@ import {
 
 const MyTasks: React.FC = () => {
     const navigate = useNavigate();
+    const { t, language } = useLanguage();
     const [allTasks, setAllTasks] = useState<TaskResponse[]>([]);
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [loading, setLoading] = useState(true);

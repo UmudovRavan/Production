@@ -15,6 +15,7 @@ import taskManagementLogo from '../assets/Task-Management-Logo.svg';
 import altensorCrmLogo from '../assets/Altensor_CRM_Logo.svg';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getAuthToken, getCurrentUser, usersApi } from '../services/api';
 
 const appsList = [
@@ -22,14 +23,14 @@ const appsList = [
     id: 'tasks',
     name: 'Task Management',
     logo: taskManagementLogo,
-    externalRoute: 'http://localhost:3000',
+    externalRoute: import.meta.env.VITE_TMS_WEB_URL || 'https://tms.altensor.com',
     requiredModule: 'tms'
   },
   {
     id: 'crm',
     name: 'Altensor CRM',
     logo: altensorCrmLogo,
-    externalRoute: 'http://localhost:5174',
+    externalRoute: import.meta.env.VITE_CRM_WEB_URL || 'https://crm.altensor.com',
     requiredModule: 'crm'
   }
 ];
@@ -42,6 +43,7 @@ const DesktopPage = () => {
   const { isDark, toggleTheme } = useTheme();
   const isDarkMode = isDark;
   const { user, logout: authLogout, setUser } = useAuth();
+  const { t, language, setLanguage, languages } = useLanguage();
 
   const [userProfile, setUserProfile] = useState({
     name: 'User',
@@ -169,7 +171,7 @@ const DesktopPage = () => {
               <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Axtar..."
+                placeholder={t('desktop.searchPlaceholder', {}, 'Axtar...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full text-sm rounded-full pl-10 pr-16 py-2 border transition-all placeholder:text-slate-400 focus:outline-none ${isDarkMode
@@ -185,9 +187,9 @@ const DesktopPage = () => {
           </div>
 
           {/* Right: Actions & User Avatar Dropdown */}
-          <div className="flex items-center gap-4 relative" ref={menuRef}>
+          <div className="flex items-center gap-3 relative" ref={menuRef}>
             <button className={`p-2 rounded-full transition-colors relative cursor-pointer ${isDarkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-              }`}>
+              }`} title={t('common.notifications', {}, 'Bildirişlər')}>
               <Bell className="w-5 h-5 stroke-[1.75]" />
             </button>
 
@@ -199,7 +201,7 @@ const DesktopPage = () => {
             >
               {userProfile.avatarUrl ? (
                 <img
-                  src={userProfile.avatarUrl.startsWith('http') ? userProfile.avatarUrl : `http://31.57.77.199:5052${userProfile.avatarUrl}`}
+                  src={userProfile.avatarUrl.startsWith('http') ? userProfile.avatarUrl : `https://api-crm.altensor.com${userProfile.avatarUrl}`}
                   alt="Avatar"
                   className="w-8 h-8 rounded-full object-cover"
                 />
@@ -212,27 +214,66 @@ const DesktopPage = () => {
 
             {/* Clean Dropdown Menu */}
             {isUserMenuOpen && (
-              <div className={`absolute top-12 right-0 w-56 rounded-2xl border shadow-xl p-2 z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2 duration-150 ${isDarkMode ? 'bg-[#1C1C1E] border-[#2C2C2E] text-white' : 'bg-white border-slate-100 text-slate-700'
+              <div className={`absolute top-12 right-0 w-64 rounded-2xl border shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-150 ${isDarkMode ? 'bg-[#1C1C1E] border-[#2C2C2E] text-white' : 'bg-white border-slate-100 text-slate-700'
                 }`}>
+                {/* Language Selection */}
+                <div className="px-2 py-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    {t('settings.languageTitle', {}, 'İnterfeys Dili')}
+                  </span>
+                  <div className="space-y-1">
+                    {[
+                      { code: 'az', name: 'Azərbaycan dili', flag: '🇦🇿' },
+                      { code: 'en', name: 'English', flag: '🇬🇧' },
+                      { code: 'ru', name: 'Русский', flag: '🇷🇺' }
+                    ].map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => {
+                          setLanguage(l.code);
+                          setIsUserMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                          language === l.code
+                            ? isDarkMode
+                              ? 'bg-indigo-600/20 text-indigo-400 font-bold border border-indigo-500/30'
+                              : 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
+                            : isDarkMode
+                            ? 'text-slate-300 hover:bg-[#27272A]'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{l.flag}</span>
+                          <span>{l.name}</span>
+                        </span>
+                        {language === l.code && <span className="text-xs">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'} my-1`}></div>
+
                 <button
                   onClick={() => {
                     toggleTheme();
                     setIsUserMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-left cursor-pointer ${isDarkMode ? 'hover:bg-[#27272A] text-slate-200' : 'hover:bg-slate-50 text-slate-700'
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors text-left cursor-pointer ${isDarkMode ? 'hover:bg-[#27272A] text-slate-200' : 'hover:bg-slate-50 text-slate-700'
                     }`}
                 >
                   {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
-                  <span>{isDarkMode ? 'İşıqlı Rejim' : 'Qaranlıq Rejim'}</span>
+                  <span>{isDarkMode ? t('desktop.themeLight', {}, 'İşıqlı Rejim') : t('desktop.themeDark', {}, 'Qaranlıq Rejim')}</span>
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-left cursor-pointer ${isDarkMode ? 'hover:bg-[#27272A] text-red-400' : 'hover:bg-slate-50 text-red-600'
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors text-left cursor-pointer ${isDarkMode ? 'hover:bg-[#27272A] text-red-400' : 'hover:bg-slate-50 text-red-600'
                     }`}
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Çıxış</span>
+                  <span>{t('desktop.logout', {}, 'Çıxış')}</span>
                 </button>
               </div>
             )}
@@ -281,7 +322,7 @@ const DesktopPage = () => {
                   </span>
                   {!hasAccess && (
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
-                      Kilidli
+                      {t('common.locked', {}, 'Kilidli')}
                     </span>
                   )}
                 </div>
@@ -310,18 +351,17 @@ const DesktopPage = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-100">{accessDeniedModal.name}</h3>
-                <p className="text-xs text-amber-400 font-semibold">Modul Abunəliyi Tələb Olunur</p>
+                <p className="text-xs text-amber-400 font-semibold">{t('desktop.noAccessTitle', {}, 'Giriş Məhdudiyyəti')}</p>
               </div>
             </div>
 
             <p className="text-sm text-slate-400 leading-relaxed mb-5">
-              Şirkətinizin (<span className="text-white font-medium">{activeUser?.tenantName || activeUser?.tenantSlug || 'Hesabınız'}</span>) cari abunəlik paketinə{' '}
-              <strong className="text-slate-200">{accessDeniedModal.name}</strong> modulu daxil edilməyib.
+              {t('desktop.noAccessDesc', {}, 'Bu modula daxil olmaq üçün təşkilatınızda müvafiq icazə aktiv edilməyib.')}
             </p>
 
             <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 mb-6 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-              <span>Aktiv modullarınız: <strong className="text-emerald-400">{userModules.length > 0 ? userModules.join(', ') : 'Heç biri'}</strong></span>
+              <span>{t('desktop.contactAdmin', {}, 'Daxil olmaq üçün təşkilat administratorunuzla əlaqə saxlayın.')}</span>
             </div>
 
             <div className="flex justify-end gap-3">
@@ -329,7 +369,7 @@ const DesktopPage = () => {
                 onClick={() => setAccessDeniedModal(null)}
                 className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-indigo-600/30"
               >
-                Anladım
+                {t('common.confirm', {}, 'Anladım')}
               </button>
             </div>
           </div>

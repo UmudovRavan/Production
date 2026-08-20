@@ -237,7 +237,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                                 if (window.opener) {
                                     window.close();
                                 } else {
-                                    window.location.href = 'http://31.57.77.199:8081/desktop';
+                                    window.location.href = import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/desktop` : 'https://info.altensor.com/desktop';
                                 }
                             }}
                             style={{

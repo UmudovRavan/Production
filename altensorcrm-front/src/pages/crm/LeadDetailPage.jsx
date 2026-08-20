@@ -699,7 +699,7 @@ const LeadDetailPage = () => {
                             <div className="flex items-center gap-2">
                               { (c.user?.avatarUrl || c.avatarUrl) ? (
                                 <img
-                                  src={(c.user?.avatarUrl || c.avatarUrl).startsWith('http') ? (c.user?.avatarUrl || c.avatarUrl) : `https://localhost:7114${c.user?.avatarUrl || c.avatarUrl}`}
+                                  src={(c.user?.avatarUrl || c.avatarUrl).startsWith('http') ? (c.user?.avatarUrl || c.avatarUrl) : `https://api-crm.altensor.com${c.user?.avatarUrl || c.avatarUrl}`}
                                   alt="Avatar"
                                   className="w-5 h-5 rounded-full object-cover border border-[#3F3F46] shrink-0"
                                 />

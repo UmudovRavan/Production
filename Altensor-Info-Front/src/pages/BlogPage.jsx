@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
 import altensorLogo from '../assets/Altensor-Logo.png';
 import { BLOG_CATEGORIES, BLOG_POSTS } from '../data/blogData';
+import { useLanguage } from '../context/LanguageContext';
 
 const BlogPage = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [visibleCount, setVisibleCount] = useState(6);
+  const { t } = useLanguage();
 
   const featuredPost = BLOG_POSTS.find((post) => post.featured) || BLOG_POSTS[0];
   const gridPosts = BLOG_POSTS.filter((post) => {
@@ -29,13 +31,13 @@ const BlogPage = () => {
         {/* 1. Blog Header / Hero */}
         <header className="px-container-padding-mobile md:px-container-padding-desktop max-w-5xl mx-auto pt-6 pb-10 text-center relative z-10">
           <span className="inline-block px-3.5 py-1 rounded-full bg-white/5 border border-white/10 font-label-sm text-xs text-primary uppercase tracking-widest font-semibold mb-3">
-            EDITORIAL
+            {t('blog.editorial', {}, 'EDITORIAL')}
           </span>
           <h1 className="font-headline-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-on-surface mb-4 leading-tight">
-            Insights on intelligent work
+            {t('blog.title', {}, 'Insights on intelligent work')}
           </h1>
           <p className="font-body-lg text-base md:text-lg text-on-surface-variant/90 max-w-2xl mx-auto leading-relaxed">
-            Perspectives on enterprise software, restrained design, and the architecture of calm workflows.
+            {t('blog.subtitle', {}, 'Perspectives on enterprise software, restrained design, and the architecture of calm workflows.')}
           </p>
 
           {/* Category Filter Tabs */}
@@ -51,7 +53,7 @@ const BlogPage = () => {
                     : 'bg-transparent text-on-surface-variant/70 border-transparent hover:text-on-surface hover:bg-white/5'
                     }`}
                 >
-                  {cat}
+                  {cat === 'All' ? t('blog.allCategories', {}, 'All') : cat}
                 </button>
               );
             })}
@@ -182,9 +184,9 @@ const BlogPage = () => {
             <div className="mt-14 text-center">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 3)}
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full btn-secondary font-label-sm text-xs uppercase tracking-widest text-on-surface-variant hover:text-on-surface border border-white/10 transition-colors"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full btn-secondary font-label-sm text-xs uppercase tracking-widest text-on-surface-variant hover:text-on-surface border border-white/10 transition-colors cursor-pointer"
               >
-                Load More Articles <span className="material-symbols-outlined text-base">expand_more</span>
+                {t('blog.loadMore', {}, 'Load More Articles')} <span className="material-symbols-outlined text-base">expand_more</span>
               </button>
             </div>
           )}

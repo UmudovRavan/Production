@@ -5,22 +5,25 @@ import { ApiConfigProvider } from './context/ApiConfigContext';
 import { LogProvider } from './context/LogContext';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { AppRoutes } from './routes/AppRoutes';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <ToastProvider>
-          <ApiConfigProvider>
-            <LogProvider>
-              <AuthProvider>
-                <AppRoutes />
-              </AuthProvider>
-            </LogProvider>
-          </ApiConfigProvider>
-        </ToastProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <ApiConfigProvider>
+              <LogProvider>
+                <AuthProvider>
+                  <AppRoutes />
+                </AuthProvider>
+              </LogProvider>
+            </ApiConfigProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 };

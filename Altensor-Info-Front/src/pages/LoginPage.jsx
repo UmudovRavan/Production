@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import altensorLogo from '../assets/Altensor-Logo.png';
 import crmHeroPreview from '../assets/crm_hero_preview.png';
 
@@ -15,6 +16,7 @@ const LoginPage = () => {
   
   const { isDark, toggleTheme } = useTheme();
   const isDarkMode = isDark;
+  const { t, language, setLanguage, languages } = useLanguage();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,12 +45,12 @@ const LoginPage = () => {
     const cleanEmail = email.trim();
 
     if (!cleanTenantSlug) {
-      setError('Zəhmət olmasa Şirkət Kodunu (Tenant Slug) qeyd edin.');
+      setError(t('login.tenantRequired', {}, 'Zəhmət olmasa Şirkət Kodunu (Tenant Slug) qeyd edin.'));
       return;
     }
 
     if (!cleanEmail) {
-      setError('Zəhmət olmasa E-poçt ünvanınızı qeyd edin.');
+      setError(t('login.emailRequired', {}, 'Zəhmət olmasa E-poçt ünvanınızı qeyd edin.'));
       return;
     }
 
@@ -59,7 +61,7 @@ const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Giriş uğursuz oldu. E-poçt, şifrə və ya şirkət kodu yanlışdır.');
+      setError(err.message || t('login.invalidCredentials', {}, 'Giriş uğursuz oldu. E-poçt, şifrə və ya şirkət kodu yanlışdır.'));
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ const LoginPage = () => {
         isDarkMode ? 'bg-[#08090C] text-white' : 'bg-[#F8FAFC] text-slate-900'
       }`}
     >
-      {/* Top Floating Bar for Back & Theme Toggle */}
+      {/* Top Floating Bar for Back & Theme/Lang Toggle */}
       <div className="absolute top-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-auto">
         <Link
           to="/"
@@ -82,22 +84,43 @@ const LoginPage = () => {
           }`}
         >
           <span className="material-symbols-outlined text-base">arrow_back</span>
-          <span>Ana Səhifə</span>
+          <span>{t('login.backHome', {}, 'Ana Səhifə')}</span>
         </Link>
 
-        <button
-          onClick={toggleTheme}
-          className={`p-2.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
-            isDarkMode
-              ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
-              : 'bg-white/90 border-slate-200 text-slate-700 hover:text-slate-900 shadow-sm hover:bg-white'
-          }`}
-          title={isDarkMode ? 'İşıqlı Rejimə Keç' : 'Qaranlıq Rejimə Keç'}
-        >
-          <span className="material-symbols-outlined text-lg leading-none block">
-            {isDarkMode ? 'light_mode' : 'dark_mode'}
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Language Switcher */}
+          <div className="flex items-center bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/10">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase transition-all cursor-pointer ${
+                  language === lang.code
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : isDarkMode
+                    ? 'text-slate-300 hover:text-white'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                {lang.code.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
+              isDarkMode
+                ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
+                : 'bg-white/90 border-slate-200 text-slate-700 hover:text-slate-900 shadow-sm hover:bg-white'
+            }`}
+            title={isDarkMode ? t('desktop.themeLight', {}, 'İşıqlı Rejim') : t('desktop.themeDark', {}, 'Qaranlıq Rejim')}
+          >
+            <span className="material-symbols-outlined text-lg leading-none block">
+              {isDarkMode ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Left Side: Ambient Branding & Dashboard Preview */}
@@ -167,10 +190,10 @@ const LoginPage = () => {
             <h2 className={`font-headline-display text-3xl font-bold tracking-tight mt-2 ${
               isDarkMode ? 'text-white' : 'text-slate-900'
             }`}>
-              Xoş Gəlmisiniz
+              {t('login.title', {}, 'Vahid Giriş Portalı')}
             </h2>
             <p className={`font-body-md text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Şirkət hesabınıza daxil olmaq üçün məlumatlarınızı qeyd edin.
+              {t('login.subtitle', {}, 'Altensor ekosisteminə daxil olmaq üçün korporativ məlumatlarınızı daxil edin.')}
             </p>
           </div>
 
@@ -187,7 +210,7 @@ const LoginPage = () => {
               <label className={`font-label-sm text-xs uppercase tracking-wider font-semibold ${
                 isDarkMode ? 'text-slate-300' : 'text-slate-700'
               }`} htmlFor="tenantSlug">
-                Şirkət Kodu / Workspace Slug
+                {t('login.tenantSlug', {}, 'Şirkət Kodu (Tenant)')}
               </label>
               <div
                 className={`relative flex items-center h-12 rounded-xl border transition-all duration-200 ${
@@ -204,7 +227,7 @@ const LoginPage = () => {
                     isDarkMode ? 'text-white placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'
                   }`}
                   id="tenantSlug"
-                  placeholder="demo-tenant"
+                  placeholder={t('login.tenantPlaceholder', {}, 'demo-tenant')}
                   type="text"
                   value={tenantSlug}
                   onChange={(e) => setTenantSlug(e.target.value)}
@@ -218,7 +241,7 @@ const LoginPage = () => {
               <label className={`font-label-sm text-xs uppercase tracking-wider font-semibold ${
                 isDarkMode ? 'text-slate-300' : 'text-slate-700'
               }`} htmlFor="email">
-                E-poçt ünvanı
+                {t('login.email', {}, 'Korporativ E-poçt')}
               </label>
               <div
                 className={`relative flex items-center h-12 rounded-xl border transition-all duration-200 ${
@@ -235,7 +258,7 @@ const LoginPage = () => {
                     isDarkMode ? 'text-white placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'
                   }`}
                   id="email"
-                  placeholder="ad@sirket.com"
+                  placeholder={t('login.emailPlaceholder', {}, 'ad@sirket.com')}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -250,7 +273,7 @@ const LoginPage = () => {
                 <label className={`font-label-sm text-xs uppercase tracking-wider font-semibold ${
                   isDarkMode ? 'text-slate-300' : 'text-slate-700'
                 }`} htmlFor="password">
-                  Şifrə
+                  {t('login.password', {}, 'Şifrə')}
                 </label>
               </div>
               <div
@@ -295,16 +318,18 @@ const LoginPage = () => {
               {loading ? (
                 <>
                   <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                  <span>Daxil olunur...</span>
+                  <span>{t('login.submitting', {}, 'Daxil olunur...')}</span>
                 </>
               ) : (
-                'Daxil Ol'
+                t('login.submit', {}, 'Daxil Ol')
               )}
             </button>
           </form>
 
           {/* Bottom SSL Badge */}
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
+          <div className={`pt-4 border-t flex items-center justify-between text-xs transition-colors ${
+            isDarkMode ? 'border-white/10 text-slate-500' : 'border-slate-200 text-slate-400'
+          }`}>
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">lock</span>
               <span className="text-[10px] uppercase tracking-wider font-semibold">256-Bit SSL Qorunur</span>

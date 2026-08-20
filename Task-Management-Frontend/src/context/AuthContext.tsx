@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen to storage events across multiple browser tabs
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'accessToken' || e.key === 'authToken') {
+            if (e.key === 'accessToken' || e.key === 'authToken' || e.key === 'token') {
                 const newToken = authService.getAccessToken();
                 if (newToken && !isTokenExpired(newToken)) {
                     const parsed = parseJwtToken(newToken);

@@ -11,6 +11,7 @@ import { DifficultyLevel } from '../dto';
 import type { UserResponse } from '../dto';
 import { taskService, userService, authService } from '../api';
 import { parseJwtToken } from '../utils';
+import { useLanguage } from '../context/LanguageContext';
 import UserSuggestionList from './UserSuggestionList';
 
 interface CreateTaskModalProps {
@@ -24,6 +25,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     onClose,
     onTaskCreated,
 }) => {
+    const { t } = useLanguage();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [difficulty, setDifficulty] = useState<DifficultyLevel>(DifficultyLevel.Medium);
@@ -210,7 +212,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C2C2E]">
                     <div className="flex items-center gap-2.5">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <h2 className="text-sm font-bold text-white tracking-tight">Yeni Tapşırıq Yarat</h2>
+                        <h2 className="text-sm font-bold text-white tracking-tight">{t('tasks.createTask', {}, 'Yeni Tapşırıq Yarat')}</h2>
                     </div>
                     <button
                         onClick={onClose}
@@ -231,12 +233,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Title */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Tapşırıq Başlığı *</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskTitle', {}, 'Tapşırıq Başlığı')} *</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="məs. Hesabatın hazırlanması..."
+                            placeholder={t('tasks.taskTitle', {}, 'Tapşırıq Başlığı...')}
                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium"
                             required
                         />
@@ -244,11 +246,11 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Description */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Təsvir</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.taskDesc', {}, 'Təsvir')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Tapşırıq haqqında ətraflı qeydlər..."
+                            placeholder={t('tasks.taskDesc', {}, 'Tapşırıq haqqında ətraflı qeydlər...')}
                             rows={3}
                             className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl p-3 text-xs text-white placeholder:text-[#71717A] focus:outline-none focus:border-blue-500 font-medium resize-none"
                         />
@@ -258,16 +260,16 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         {/* Difficulty */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">Prioritet / Çətinlik</label>
+                            <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.difficulty', {}, 'Prioritet / Çətinlik')}</label>
                             <div className="relative flex items-center">
                                 <select
                                     value={difficulty}
                                     onChange={(e) => setDifficulty(Number(e.target.value) as DifficultyLevel)}
                                     className="w-full bg-[#27272A]/80 border border-[#3F3F46]/60 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none cursor-pointer focus:outline-none focus:border-blue-500 pr-8 font-medium"
                                 >
-                                    <option value={DifficultyLevel.Easy}>Aşağı (Asan)</option>
-                                    <option value={DifficultyLevel.Medium}>Orta</option>
-                                    <option value={DifficultyLevel.Hard}>Yüksək (Çətin)</option>
+                                    <option value={DifficultyLevel.Easy}>{t('difficulties.easy', {}, 'Aşağı (Asan)')}</option>
+                                    <option value={DifficultyLevel.Medium}>{t('difficulties.medium', {}, 'Orta')}</option>
+                                    <option value={DifficultyLevel.Hard}>{t('difficulties.hard', {}, 'Yüksək (Çətin)')}</option>
                                 </select>
                                 <ChevronDownIcon className="w-3.5 h-3.5 text-[#71717A] absolute right-3 pointer-events-none" />
                             </div>
@@ -275,7 +277,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                         {/* Deadline */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-[#A1A1AA]">İcra Tarixi *</label>
+                            <label className="text-xs font-semibold text-[#A1A1AA]">{t('common.dueDate', {}, 'İcra Tarixi')} *</label>
                             <div className="relative flex items-center">
                                 <input
                                     type="datetime-local"
@@ -290,7 +292,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                     {/* Assignee Search / Mention */}
                     <div className="space-y-1.5 relative">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Təyin Edilən Şəxs</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.assignedUser', {}, 'Təyin Edilən Şəxs')}</label>
                         <div className="relative flex items-center">
                             <input
                                 ref={assignInputRef}
@@ -314,22 +316,22 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
                         {assignedUser && (
                             <div className="flex items-center gap-2 pt-1 text-xs text-emerald-400">
-                                <span>Təyin edildi: <strong>{assignedUser.userName}</strong></span>
+                                <span>{t('tasks.assignedUser', {}, 'Təyin edildi')}: <strong>{assignedUser.userName}</strong></span>
                             </div>
                         )}
                     </div>
 
                     {/* Attachments */}
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#A1A1AA]">Qoşma Fayllar</label>
+                        <label className="text-xs font-semibold text-[#A1A1AA]">{t('tasks.attachments', {}, 'Qoşma Fayllar')}</label>
                         <div className="flex items-center gap-2">
                             <label className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] border border-[#3F3F46] text-xs font-medium text-white cursor-pointer transition-colors">
                                 <PaperClipIcon className="w-4 h-4 text-[#A1A1AA]" />
-                                <span>Fayl seçin</span>
+                                <span>{t('tasks.uploadAttachment', {}, 'Fayl seçin')}</span>
                                 <input type="file" multiple onChange={handleFileChange} className="hidden" />
                             </label>
                             <span className="text-[11px] text-[#71717A]">
-                                {files.length > 0 ? `${files.length} fayl seçildi` : 'İstəyə görə'}
+                                {files.length > 0 ? `${files.length} fayl seçildi` : t('common.optional', {}, 'İstəyə görə')}
                             </span>
                         </div>
 
@@ -354,14 +356,14 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             onClick={onClose}
                             className="px-4 py-2 rounded-xl bg-transparent hover:bg-white/5 text-xs font-semibold text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
                         >
-                            Ləğv et
+                            {t('common.cancel', {}, 'Ləğv et')}
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
                             className="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-lg transition-colors cursor-pointer disabled:opacity-50"
                         >
-                            {isSubmitting ? 'Yaradılır...' : 'Tapşırığı Yarat'}
+                            {isSubmitting ? t('common.loading', {}, 'Yaradılır...') : t('tasks.createTask', {}, 'Tapşırığı Yarat')}
                         </button>
                     </div>
                 </form>

@@ -1,21 +1,24 @@
 import React from 'react';
 import { DifficultyLevel } from '../dto';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DifficultyDotsProps {
     difficulty: number;
 }
 
 const DifficultyDots: React.FC<DifficultyDotsProps> = ({ difficulty }) => {
+    const { t } = useLanguage();
+
     const getDifficultyConfig = () => {
         switch (difficulty) {
             case DifficultyLevel.Easy:
-                return { level: 1, color: 'bg-green-500', label: 'Easy' };
+                return { level: 1, color: 'bg-green-500', label: t('difficulties.easy', {}, 'Asan') };
             case DifficultyLevel.Medium:
-                return { level: 2, color: 'bg-yellow-500', label: 'Medium' };
+                return { level: 2, color: 'bg-yellow-500', label: t('difficulties.medium', {}, 'Orta') };
             case DifficultyLevel.Hard:
-                return { level: 3, color: 'bg-red-500', label: 'Hard' };
+                return { level: 3, color: 'bg-red-500', label: t('difficulties.hard', {}, 'Çətin') };
             default:
-                return { level: 1, color: 'bg-gray-400', label: 'Unknown' };
+                return { level: 1, color: 'bg-gray-400', label: t('common.none', {}, 'Naməlum') };
         }
     };
 

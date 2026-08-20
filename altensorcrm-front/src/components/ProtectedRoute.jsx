@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children, requiredModule = 'CRM' }) => {
 
   if (!isAuthenticated) {
     if (typeof window !== 'undefined') {
-      window.location.href = 'http://31.57.77.199:8081/login';
+      window.location.href = import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/login` : 'https://info.altensor.com/login';
       return null;
     }
     return <Navigate to="/" replace />;
@@ -231,7 +231,7 @@ const ProtectedRoute = ({ children, requiredModule = 'CRM' }) => {
                 if (window.opener) {
                   window.close();
                 } else {
-                  window.location.href = 'http://31.57.77.199:8081/desktop';
+                  window.location.href = import.meta.env.VITE_INFO_WEB_URL ? `${import.meta.env.VITE_INFO_WEB_URL}/desktop` : 'https://info.altensor.com/desktop';
                 }
               }}
               style={{

@@ -572,7 +572,7 @@ const SettingsPage = () => {
                 <div className="relative group cursor-pointer shrink-0">
                   {userProfile.avatarUrl ? (
                     <img
-                      src={userProfile.avatarUrl.startsWith('http') ? userProfile.avatarUrl : `https://localhost:7114${userProfile.avatarUrl}`}
+                      src={userProfile.avatarUrl.startsWith('http') ? userProfile.avatarUrl : `https://api-crm.altensor.com${userProfile.avatarUrl}`}
                       alt="Avatar"
                       className="w-14 h-14 rounded-full object-cover border border-[#3F3F46] shadow-md group-hover:opacity-80 transition-opacity"
                     />
@@ -1248,7 +1248,7 @@ const SettingsPage = () => {
                     <div className="flex items-center gap-3">
                       {user.avatarUrl ? (
                         <img
-                          src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `https://localhost:7114${user.avatarUrl}`}
+                          src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `https://api-crm.altensor.com${user.avatarUrl}`}
                           alt="Avatar"
                           className="w-9 h-9 rounded-full object-cover border border-[#3F3F46] shrink-0 shadow-xs"
                         />
